@@ -637,11 +637,10 @@
       "within": "→ binnen de baseline van {{low}} tot {{high}}"
     },
     "balance": {
-      "label": "Slaapvariatie",
+      "label": "Slaapbalans",
       "basisTarget": "{{reported}} van {{total}} nachten tegen je doel van {{target}}",
       "basisBaseline": "{{reported}} van {{total}} nachten tegen je eigen gebruikelijke",
       "chartLabel": "Slaapbalans per nacht in {{period}}",
-      "column": "Balans",
       "columnUnit": "Minuten over of onder"
     },
     "units": {

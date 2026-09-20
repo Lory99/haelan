@@ -637,11 +637,10 @@
       "within": "→ within the {{low}} to {{high}} baseline"
     },
     "balance": {
-      "label": "Sleep variation",
+      "label": "Sleep Balance",
       "basisTarget": "{{reported}} of {{total}} nights against your {{target}} target",
       "basisBaseline": "{{reported}} of {{total}} nights against your own usual",
       "chartLabel": "Nightly sleep balance through {{period}}",
-      "column": "Balance",
       "columnUnit": "Minutes over or under"
     },
     "units": {

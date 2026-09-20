@@ -548,16 +548,22 @@ export function Sleep() {
             hides the Card rather than leaving a shell that would still report itself present to
             CardGrid. `oneDayRange` swaps the chart for ChartNote on the Day tab: a single diverging
             bar says nothing the headline does not. */}
+        {/* No label on the MetricCard itself, the same as every tile above: the title lives in
+            the StatTile below, so Card renders no header of its own and the error and pending
+            branches keep the same chrome as their neighbours rather than a titled shell beside
+            untitled ones. No unit beside the headline either: formatSignedDuration already reads
+            "2h 15m", so a "Minutes" after it would state the unit twice. The bedtime and wake
+            time tiles above omit theirs for the same reason, and for the same reason this card
+            carries no delta: the headline is already a signed figure, and a change computed over
+            it would be noise. */}
         <MetricCard metric="sleep_asleep_minutes" span={4} basisPlacement="body"
-          label={t('sleep.balance.label')}
           query={metricGroups.queryFor('sleep_asleep_minutes')} points={balancePoints}
           basisKey={balanceZeroLine.source === 'baseline' ? 'sleep.balance.basisBaseline' : 'sleep.balance.basisTarget'}
           basisWornKey={balanceZeroLine.source === 'baseline' ? 'sleep.balance.basisBaseline' : 'sleep.balance.basisTarget'}
           basisValues={{ total: rangeDates.length, target: formatDuration(balanceZeroLine.minutes) }}
           oneDayRange={controls.tab === 'day'}>
           {(basis, oneDayRange) => (
-            <StatTile label={t('sleep.balance.column')} value={formatSignedDuration(balanceTotal, '')}
-              unit={t('sleep.units.minutes')} basis={basis}>
+            <StatTile label={t('sleep.balance.label')} value={formatSignedDuration(balanceTotal, '')} basis={basis}>
               {oneDayRange ? <ChartNote /> : (
                 <BalanceBars values={balance.values} labels={balance.labels}
                   label={t('sleep.balance.chartLabel', { period })}

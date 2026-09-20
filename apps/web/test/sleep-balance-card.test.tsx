@@ -172,7 +172,7 @@ function stubBalance(
 const balanceCard = (): Element | undefined =>
   [...container!.querySelectorAll('.card')].find((card) => {
     const label = card.querySelector('.label')?.textContent ?? ''
-    return label === 'Sleep variation'
+    return label === 'Sleep Balance'
   })
 
 const headline = (): string | undefined => balanceCard()?.querySelector('.value')?.textContent ?? undefined
@@ -213,7 +213,7 @@ describe('the sleep balance card', () => {
     // Worked by hand from WEEK_NIGHTS against the stored target of 480: -60, 0, +60, absent, -90,
     // -30, -15 sums to -135. The whole cell rather than a substring, because "2h 15m" alone would
     // also match a card that had counted the silent night as a night at exactly its target.
-    expect(headline()).toBe('-2h 15m Minutes')
+    expect(headline()).toBe('-2h 15m')
     // The night count is the card's own basis, computed from the bars actually drawn rather than
     // from the seven days in the range: 6 of 7, and the zero line named because the card switches
     // between two of them.
@@ -292,8 +292,8 @@ describe('the sleep balance card', () => {
     // Counted against nothing, and over six nights rather than seven: the same claim the basis line
     // makes one line up, asserted on the number the excluded night would have moved.
     expect(balanceCard()!.querySelector('.basis')!.textContent).toBe('6 of 7 nights against your 8h 00m target')
-    expect(headline()).toBe('0h 00m Minutes')
-    expect(headline()).not.toBe('-1h 30m Minutes')
+    expect(headline()).toBe('0h 00m')
+    expect(headline()).not.toBe('-1h 30m')
   })
 
   // The request that carries the exclusions, so the case above cannot pass by the page never
@@ -348,12 +348,12 @@ describe('the sleep balance card', () => {
     await render(client, tree)
     restore()
 
-    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep variation')
+    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep Balance')
     expect(balanceCard()!.querySelector('.basis')!.textContent).toBe('6 of 7 nights against your own usual')
     // The same bars against a centre 60 minutes higher: -120, -60, 0, absent, -150, -90, -75 sums
     // to -495. A card that named the baseline but kept measuring against the target would read
     // -2h 15m, which is the whole claim of this test and the half a label assertion cannot make.
-    expect(headline()).toBe('-8h 15m Minutes')
+    expect(headline()).toBe('-8h 15m')
   })
 
   it('falls back to the stored target when the baseline is thin', async () => {
@@ -363,9 +363,9 @@ describe('the sleep balance card', () => {
     await render(client, tree)
     restore()
 
-    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep variation')
+    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep Balance')
     expect(balanceCard()!.querySelector('.basis')!.textContent).toBe('6 of 7 nights against your 8h 00m target')
-    expect(headline()).toBe('-2h 15m Minutes')
+    expect(headline()).toBe('-2h 15m')
   })
 
   // 42 is the crossover, and it is the app's own: `thin` is `n < 14 || n / 60 < 0.7` over the
@@ -377,8 +377,8 @@ describe('the sleep balance card', () => {
     const { client, tree } = withQuery(<Sleep />)
     await render(client, tree)
     thin()
-    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep variation')
-    expect(headline()).toBe('-2h 15m Minutes')
+    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep Balance')
+    expect(headline()).toBe('-2h 15m')
 
     // The card is unmounted between the two, rather than a second tree rendered beside the first:
     // `balanceCard()` finds the first match in the document, so a leftover card from the render
@@ -391,8 +391,8 @@ describe('the sleep balance card', () => {
     const second = withQuery(<Sleep />)
     await render(second.client, second.tree)
     solid()
-    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep variation')
-    expect(headline()).toBe('-8h 15m Minutes')
+    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep Balance')
+    expect(headline()).toBe('-8h 15m')
   })
 
   // The target is a stored preference rather than an instance constant, so the card has to read the
@@ -408,7 +408,7 @@ describe('the sleep balance card', () => {
 
     expect(balanceCard()!.querySelector('.basis')!.textContent).toBe('6 of 7 nights against your 7h 00m target')
     // Against 420: 0, +60, +120, absent, -30, +30, +45 sums to +225.
-    expect(headline()).toBe('3h 45m Minutes')
+    expect(headline()).toBe('3h 45m')
   })
 
   // The baseline is fetched against historicalTo, the same anchor the time asleep tile above uses,
