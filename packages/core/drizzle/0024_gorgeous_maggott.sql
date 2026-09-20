@@ -1,1 +1,0 @@
-ALTER TABLE `people` ADD `sleep_target_minutes` integer DEFAULT 480 NOT NULL;

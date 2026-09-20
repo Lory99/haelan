@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "6c4718b0-2903-49de-a5f5-062e33fbb19f",
+  "id": "5e8f7f99-9d98-47f8-9569-d9cd9b34a709",
   "prevId": "e7a4cd74-528b-4466-b69b-ae44a38350e4",
   "tables": {
     "accounts": {
@@ -642,6 +642,14 @@
         },
         "update_check_enabled": {
           "name": "update_check_enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "companion_mode": {
+          "name": "companion_mode",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1350,13 +1358,12 @@
           "notNull": false,
           "autoincrement": false
         },
-        "sleep_target_minutes": {
-          "name": "sleep_target_minutes",
+        "companion_path": {
+          "name": "companion_path",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 480
+          "notNull": false,
+          "autoincrement": false
         },
         "built_mapping_version": {
           "name": "built_mapping_version",
