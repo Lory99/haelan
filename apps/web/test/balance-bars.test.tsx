@@ -49,8 +49,9 @@ const labels = ['2026-08-10', '2026-08-11', '2026-08-12', '2026-08-13']
 const values = [45, null, -105, 30]
 
 type AxisOption = {
-  min?: number | ((value: { min: number, max: number }) => number)
+  min?: number
   max?: number
+  splitNumber?: number
   scale?: boolean
   name?: string
   axisLabel?: { formatter?: (v: number) => string }
@@ -95,29 +96,35 @@ const tableRowFor = (date: string): string[] | undefined =>
     .find((cells) => cells[0] === date)
 
 describe('BalanceBars', () => {
-  // The whole reason this is a second component rather than a flag on DailyBars, and the first
-  // half of it: half of these bars are negative by construction, so `min: 0` would draw a night two
-  // hours under its target as a bar of length zero. Asserted as the absence of the literal AND as
-  // the presence of the symmetric extent, because a chart that simply left the axis to echarts
-  // would pass the first assertion while still fitting whatever the data happened to span.
-  it('does not start its value axis at zero', () => {
+  // The whole reason this is a second component rather than a flag on DailyBars: half of these
+  // bars are negative by construction, so `min: 0` would draw a night two hours under its target
+  // as a bar of length zero. Asserted as a centered extent rather than as the mere absence of
+  // the literal, because a chart that simply left the axis to echarts would pass the absence
+  // while still fitting whatever the data happened to span.
+  it('centers its value axis on the zero line rather than starting it at zero', () => {
     const option = mount()
-    expect(option.yAxis.min).not.toBe(0)
-    expect(typeof option.yAxis.min).toBe('function')
+    expect(option.yAxis.min).toBeLessThan(0)
+    expect(option.yAxis.min).toBe(-option.yAxis.max!)
   })
 
-  it('makes the extent symmetric around the zero line once there is a deficit night to show', () => {
-    const min = mount().yAxis.min as (value: { min: number, max: number }) => number
-    expect(min({ min: -105, max: 45 })).toBe(-105)
-    expect(min({ min: -105, max: 300 })).toBe(-300)
+  // The extent is the peak deviation rounded up to the half hour: the axis ticks the minimum,
+  // zero and the maximum (splitNumber below), and an unfitted extent would tick at whatever
+  // the data's own extremes happen to be. Peak here is 105, so the half extent is 120.
+  it('fits a symmetric half-hour extent around the zero line', () => {
+    const option = mount()
+    expect(option.yAxis.min).toBe(-120)
+    expect(option.yAxis.max).toBe(120)
+    expect(option.yAxis.splitNumber).toBe(2)
   })
 
-  // The other side of the same decision: a period with nothing under the line has nothing to
-  // compare against below it, and a symmetric extent there would spend half the plot on empty
-  // space. The axis is left to echarts, and the zero line is still drawn, at the bottom.
-  it('leaves the extent alone when every readable night is at or above the line', () => {
+  // The other side of the same decision, reversed: a period with nothing under the line keeps
+  // the line centered with empty space below it, because the line is the comparison every bar
+  // is measured against rather than the data's own floor. Peak here is 45, so the half extent
+  // is the one-hour floor.
+  it('keeps the zero line centered when every readable night is at or above it', () => {
     const option = mount({ values: [45, null, 10, 30] })
-    expect(option.yAxis.min).toBeUndefined()
+    expect(option.yAxis.min).toBe(-60)
+    expect(option.yAxis.max).toBe(60)
   })
 
   // The zero line is the comparison, and it is drawn as a markLine because echarts puts value

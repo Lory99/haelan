@@ -92,13 +92,25 @@ export function BalanceBars({
     }
   })
 
-  // Whether the zero line is one of the drawn values, and therefore whether the y axis has to
-  // include it. Computed here rather than inside `build`, and memoised off the same `values` array
-  // the chart is drawn from: a fresh boolean is a primitive and would be safe either way, but the
-  // dashed line is only meaningful on a chart that has bars, and a range where every readable
-  // night is above its target would otherwise be given an extent padded down to a zero line with
-  // nothing under it.
-  const hasBelow = useMemo(() => values.some((v) => typeof v === 'number' && v < 0), [values])
+  // The half extent of the value axis, in minutes, always symmetric around the zero line
+  // even when one side holds nothing: the line is the comparison every bar is measured against,
+  // so it sits in the middle of the card rather than wherever the data's own extent happened to
+  // fall. A range of only surplus nights still draws the line mid plot with empty space below
+  // it, and that space is the point rather than waste: it is what says no night fell short.
+  //
+  // Rounded up to the next half hour with an hour as the floor, because the extent produces
+  // exactly three ticks (splitNumber below): the minimum, zero, the maximum. A fitted extent
+  // would label five or more deviations the reader never asked to compare, and an unfitted one
+  // ticks at whatever the data's own extremes happen to be ("-1h 47m"), a precision the
+  // comparison does not have. Plain numbers, memoised off the same `values` array the chart is
+  // drawn from, so `build`'s dependency chain stays primitive (chart-lifecycle.test.tsx).
+  const extent = useMemo(() => {
+    let peak = 0
+    for (const value of values) {
+      if (typeof value === 'number') peak = Math.max(peak, Math.abs(value))
+    }
+    return Math.max(60, Math.ceil(peak / 30) * 30)
+  }, [values])
 
   const build = useCallback((tokens: ChartTokens): EChartsOption => {
     const base = chartBase(tokens)
@@ -132,13 +144,13 @@ export function BalanceBars({
         // second component: half of these bars are negative by construction, and a floor at zero
         // would silently flatten every deficit night to nothing.
         //
-        // Symmetric around the zero line when the range holds a deficit night, and left to echarts
-        // when it does not: the point of the symmetry is that the zero line is a fixed reference
-        // the reader can compare bar heights across, so a range with deficits on both sides of it
-        // puts the line in the middle rather than wherever the data's own extent happened to fall.
-        // A range with no deficit night has nothing to compare against below the line, and a
-        // symmetric extent there would spend half the plot on empty space.
-        ...(hasBelow ? { min: (value: { min: number, max: number }) => -Math.max(Math.abs(value.min), Math.abs(value.max)) } : {}),
+        // A fixed symmetric extent with exactly three ticks, rather than a fitted one: the zero
+        // line is the only interior reference this chart needs, and the minimum and maximum name
+        // the range's own extremes. echarts divides a fixed extent by splitNumber, so 2 puts the
+        // ticks at -extent, zero and +extent however the data falls.
+        min: -extent,
+        max: extent,
+        splitNumber: 2,
         name: axisUnit,
         nameTextStyle: { color: base.axisLabel.color, fontSize: base.axisLabel.fontSize },
         splitLine: base.splitLine,
@@ -195,7 +207,7 @@ export function BalanceBars({
         },
       }],
     }
-  }, [values, labels, marks, axisUnit, hasBelow])
+  }, [values, labels, marks, axisUnit, extent])
 
   const onClick = useCallback((event: ECElementEvent) => {
     const date = dayPointDate(labels, marks, event)
