@@ -19,6 +19,7 @@ export interface SavedProfile {
   timezone: string
   birthDate: string | null
   sex: 'male' | 'female' | null
+  sleepTargetMinutes: number
   rebuildPending: boolean
 }
 
@@ -28,6 +29,14 @@ export interface ProfileEdit {
   timezone: string
   birthDate: string | null
   sex: 'male' | 'female' | null
+  // Optional, unlike the stored answer in SavedProfile: a number input cleared mid-edit holds ''
+  // rather than a number, and Number('') is 0, which is outside the range the store accepts. An
+  // absent field is what the route already reads as "leave it alone" (its three answers rule), so
+  // a field the reader is midway through retyping is omitted from the body rather than sent as
+  // something the store would refuse. The panel's own `changed` comparison keeps the save button
+  // disabled while the draft holds nothing, so the omission is a second line of defence rather
+  // than the mechanism.
+  sleepTargetMinutes?: number
 }
 
 /**

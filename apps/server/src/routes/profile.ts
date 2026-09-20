@@ -8,6 +8,7 @@ interface ProfileBody {
   timezone?: unknown
   birthDate?: unknown
   sex?: unknown
+  sleepTargetMinutes?: unknown
 }
 interface PasswordBody { currentPassword?: unknown, newPassword?: unknown }
 
@@ -42,7 +43,7 @@ export function registerProfile(app: FastifyInstance): void {
         return reply.code(statusFor('not_found')).send(errorBody('not_found', 'no_such_person', 'this account has no person row'))
       }
 
-      const { displayName, username, timezone, birthDate, sex } = request.body ?? {}
+      const { displayName, username, timezone, birthDate, sex, sleepTargetMinutes } = request.body ?? {}
       // Each field is optional and absent means untouched, so a client can save one control
       // without restating the other two. A present field must still be a string: `undefined` and
       // `null` are different answers here, and treating the second as "leave it" would let a
@@ -64,6 +65,20 @@ export function registerProfile(app: FastifyInstance): void {
         }
       }
 
+      // Its own branch rather than a fourth entry in either loop above, because it is a number and
+      // not a string, and because it is neither clearable nor nullable: the column is NOT NULL with
+      // a default, so `null` here is a client mistake like a null name rather than an instruction
+      // to clear. The range itself is the store's own (PeopleStore.setSleepTargetMinutes), so a
+      // route and a direct caller refuse the same values; this branch only answers the two things
+      // the store cannot see, which is that a JSON body may carry a string or a float where a
+      // number was meant, and that the refusal has to be a 4xx envelope rather than a throw.
+      if (sleepTargetMinutes !== undefined) {
+        if (typeof sleepTargetMinutes !== 'number' || !Number.isInteger(sleepTargetMinutes)) {
+          return reply.code(statusFor('config'))
+            .send(errorBody('config', 'config', 'sleepTargetMinutes must be whole minutes'))
+        }
+      }
+
       // The zone comparison is against what is stored, not against whether the field was sent.
       // Saving the form unchanged sends all three every time, and a timezone write costs this
       // person every derived row they have until a rebuild replays them (PeopleStore.setTimezone),
@@ -76,6 +91,11 @@ export function registerProfile(app: FastifyInstance): void {
       if (typeof username === 'string') stores().accounts.setUsername(account.id, username)
       if (birthDate !== undefined) stores().people.setBirthDate(person.id, birthDate as string | null)
       if (sex !== undefined) stores().people.setSex(person.id, sex as 'male' | 'female' | null)
+      // An out of range value throws ConfigError here, which this scope's own error handler turns
+      // into the same envelope the branch above sends by hand. Left to travel rather than
+      // pre-checked against a second copy of the bounds: the range lives in the store, and a route
+      // that restated it would be the second place a future change had to reach.
+      if (typeof sleepTargetMinutes === 'number') stores().people.setSleepTargetMinutes(person.id, sleepTargetMinutes)
       if (zoneMoved) stores().people.setTimezone(person.id, timezone)
 
       const saved = stores().people.get(person.id)!
@@ -86,6 +106,7 @@ export function registerProfile(app: FastifyInstance): void {
         timezone: saved.timezone,
         birthDate: saved.birthDate,
         sex: saved.sex,
+        sleepTargetMinutes: saved.sleepTargetMinutes,
         // What the caller is owed rather than what happened: nothing rebuilds on this request. The
         // derivation stamp is cleared, which is what the boot rebuild reads, so this says "your
         // history is being re-derived from the archive the next time this instance starts" and the
