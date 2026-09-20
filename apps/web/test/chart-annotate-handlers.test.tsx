@@ -107,7 +107,6 @@ const CHARTS: { name: string, render: (onPointClick?: (...args: never[]) => void
   {
     name: 'BalanceBars',
     render: (onPointClick) => <BalanceBars values={VALUES} labels={LABELS} label="Balance" unit="Minutes over or under"
-      axisUnit="deviation"
       onPointClick={onPointClick as ((date: string) => void) | undefined} />,
   },
   {

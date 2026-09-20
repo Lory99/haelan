@@ -74,7 +74,7 @@ function mount(props: Partial<Parameters<typeof BalanceBars>[0]> = {}): Option {
     root!.render(
       <I18nProvider lng="en">
         <BalanceBars values={values} labels={labels} label="balance, august 2026"
-          unit="Minutes over or under" axisUnit="deviation"
+          unit="Minutes over or under"
           annotations={[]} excluded={[]} {...props} />
       </I18nProvider>,
     )
@@ -169,7 +169,6 @@ describe('BalanceBars', () => {
     const option = mount()
     expect(option.yAxis.axisLabel!.formatter!(-105)).toBe('-1h 45m')
     expect(option.yAxis.axisLabel!.formatter!(45)).toBe('0h 45m')
-    expect(option.yAxis.name).toBe('deviation')
   })
 
   it('states a signed balance per readable night in its accessible table', () => {

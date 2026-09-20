@@ -536,9 +536,9 @@ export function Sleep() {
             their stored target until it is.
 
             Placed after the two summary cards and before the first tile row, so the period's own
-            reading comes before the per-metric tiles that break it down. Span 5, the sleep
-            schedule card's own width: the card states one headline and one chart, and a full
-            row would give that single number more weight than the two summary cards above it.
+            reading comes before the per-metric tiles that break it down. Span 4, the bedtime
+            and efficiency tiles' own width: the card states one headline and one chart, and a
+            wider card would give that single number more weight than the tiles beside it.
 
             Routed through MetricCard rather than hand rolled, which is what buys the pending, the
             error, the not_synced and the no_data branches in one place, and is also what keeps
@@ -548,8 +548,8 @@ export function Sleep() {
             hides the Card rather than leaving a shell that would still report itself present to
             CardGrid. `oneDayRange` swaps the chart for ChartNote on the Day tab: a single diverging
             bar says nothing the headline does not. */}
-        <MetricCard metric="sleep_asleep_minutes" span={5} basisPlacement="body"
-          label={t(balanceZeroLine.source === 'baseline' ? 'sleep.balance.labelBaseline' : 'sleep.balance.labelTarget')}
+        <MetricCard metric="sleep_asleep_minutes" span={4} basisPlacement="body"
+          label={t('sleep.balance.label')}
           query={metricGroups.queryFor('sleep_asleep_minutes')} points={balancePoints}
           basisKey={balanceZeroLine.source === 'baseline' ? 'sleep.balance.basisBaseline' : 'sleep.balance.basisTarget'}
           basisWornKey={balanceZeroLine.source === 'baseline' ? 'sleep.balance.basisBaseline' : 'sleep.balance.basisTarget'}
@@ -561,7 +561,7 @@ export function Sleep() {
               {oneDayRange ? <ChartNote /> : (
                 <BalanceBars values={balance.values} labels={balance.labels}
                   label={t('sleep.balance.chartLabel', { period })}
-                  unit={t('sleep.balance.columnUnit')} axisUnit={t('sleep.balance.axisUnit')}
+                  unit={t('sleep.balance.columnUnit')}
                   annotations={balanceAnnotations} excluded={balanceExcluded}
                   onPointClick={(localDate) => setAnnotateTarget({
                     scope: 'day_metric', localDate, metric: 'sleep_asleep_minutes',

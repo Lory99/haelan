@@ -168,11 +168,11 @@ function stubBalance(
   return () => { globalThis.fetch = original }
 }
 
-/** The card itself, found by the two labels its zero line can carry. */
+/** The card itself, found by its short label; the basis line below it names the zero line. */
 const balanceCard = (): Element | undefined =>
   [...container!.querySelectorAll('.card')].find((card) => {
     const label = card.querySelector('.label')?.textContent ?? ''
-    return label === 'Balance against your target' || label === 'Balance against your usual'
+    return label === 'Sleep variation'
   })
 
 const headline = (): string | undefined => balanceCard()?.querySelector('.value')?.textContent ?? undefined
@@ -339,8 +339,8 @@ describe('the sleep balance card', () => {
   })
 
   // The two line rule for the zero line. A baseline that is not thin is the person's own usual and
-  // takes over; the card says which of the two it is measuring against, because "8h short of 8h"
-  // and "1h below your usual" are different claims.
+  // takes over; the basis line says which of the two it is measuring against, because "8h short
+  // of 8h" and "1h below your usual" are different claims.
   it('uses the person\'s own usual once the baseline is not thin', async () => {
     window.history.replaceState(null, '', WEEK_URL)
     const restore = stubBalance([], WEEK_NIGHTS, { center: 540, spread: 30, n: 60, thin: false })
@@ -348,7 +348,7 @@ describe('the sleep balance card', () => {
     await render(client, tree)
     restore()
 
-    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Balance against your usual')
+    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep variation')
     expect(balanceCard()!.querySelector('.basis')!.textContent).toBe('6 of 7 nights against your own usual')
     // The same bars against a centre 60 minutes higher: -120, -60, 0, absent, -150, -90, -75 sums
     // to -495. A card that named the baseline but kept measuring against the target would read
@@ -363,7 +363,7 @@ describe('the sleep balance card', () => {
     await render(client, tree)
     restore()
 
-    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Balance against your target')
+    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep variation')
     expect(balanceCard()!.querySelector('.basis')!.textContent).toBe('6 of 7 nights against your 8h 00m target')
     expect(headline()).toBe('-2h 15m Minutes')
   })
@@ -377,7 +377,7 @@ describe('the sleep balance card', () => {
     const { client, tree } = withQuery(<Sleep />)
     await render(client, tree)
     thin()
-    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Balance against your target')
+    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep variation')
     expect(headline()).toBe('-2h 15m Minutes')
 
     // The card is unmounted between the two, rather than a second tree rendered beside the first:
@@ -391,7 +391,7 @@ describe('the sleep balance card', () => {
     const second = withQuery(<Sleep />)
     await render(second.client, second.tree)
     solid()
-    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Balance against your usual')
+    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep variation')
     expect(headline()).toBe('-8h 15m Minutes')
   })
 

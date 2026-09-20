@@ -39,7 +39,7 @@ const ZERO_LINE_NAME = 'zero'
  * canvas and a table that disagree about a day are the defect this project treats as binding.
  */
 export function BalanceBars({
-  values, labels, label, unit, axisUnit, formatValue,
+  values, labels, label, unit, formatValue,
   height = 130, annotations = EMPTY, excluded = EMPTY, onPointClick,
 }: {
   // Dense over the range the reader asked for, one entry per calendar day, with null where nothing
@@ -52,9 +52,6 @@ export function BalanceBars({
   label: string
   /** The accessible table's value-column header, as DailyBars' prop of this name. */
   unit: string
-  /** The value axis's own name. A deviation rather than a quantity, so the caller passes copy
-   *  saying so; there is no absolute gridline to label on a rolling zero line. */
-  axisUnit: string
   // Every value in `values` is presumed to be minutes of deviation from the zero line. Optional,
   // and defaulted to formatSignedDuration below, because this is the only chart in the app whose
   // values are inherently signed and the shared duration formatter is the one thing that prints a
@@ -151,8 +148,6 @@ export function BalanceBars({
         min: -extent,
         max: extent,
         splitNumber: 2,
-        name: axisUnit,
-        nameTextStyle: { color: base.axisLabel.color, fontSize: base.axisLabel.fontSize },
         splitLine: base.splitLine,
         // Through the ref, not the `format` closure above, for the same reason the tooltip
         // formatter reads it: `format` depends on `formatValue` and `i18n.language`, neither of
@@ -207,7 +202,7 @@ export function BalanceBars({
         },
       }],
     }
-  }, [values, labels, marks, axisUnit, extent])
+  }, [values, labels, marks, extent])
 
   const onClick = useCallback((event: ECElementEvent) => {
     const date = dayPointDate(labels, marks, event)
