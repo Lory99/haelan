@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { createTestDatabase } from '../src/testing/fixtures.ts'
 import { PeopleStore } from '../src/store/people.ts'
+import { DEFAULT_SLEEP_TARGET_MINUTES, SLEEP_TARGET_MINUTES_RANGE } from '../src/derive/metrics.ts'
 // Open a migrated database the way the neighbouring store tests do, and build a PeopleStore over
 // it. Do not hand-roll a schema here: the point of this test is that migration 0018 ran.
 
@@ -77,6 +78,55 @@ describe('the profile fields that feed a cardio load', () => {
     const before = store.get(personId)!.builtDerivationVersion
     store.setBirthDate(personId, '1985-03-04')
     store.setSex(personId, 'male')
+    expect(store.get(personId)!.builtDerivationVersion).toBe(before)
+  })
+})
+
+describe('the sleep target, the first stored preference beyond the profile fields', () => {
+  it('answers eight hours on a person the wizard just created', () => {
+    const { store, personId } = freshPerson()
+    expect(store.get(personId)!.sleepTargetMinutes).toBe(DEFAULT_SLEEP_TARGET_MINUTES)
+    // The number itself, not only the constant: a renamed constant that took a new value with it
+    // would keep this test green while every existing person's card moved its zero line.
+    expect(DEFAULT_SLEEP_TARGET_MINUTES).toBe(480)
+  })
+
+  it('stores a target and reads it back', () => {
+    const { store, personId } = freshPerson()
+    store.setSleepTargetMinutes(personId, 450)
+    expect(store.get(personId)!.sleepTargetMinutes).toBe(450)
+  })
+
+  it('refuses a target under the floor and above the ceiling', () => {
+    const { store, personId } = freshPerson()
+    expect(() => store.setSleepTargetMinutes(personId, SLEEP_TARGET_MINUTES_RANGE.min - 1)).toThrow()
+    expect(() => store.setSleepTargetMinutes(personId, SLEEP_TARGET_MINUTES_RANGE.max + 1)).toThrow()
+    // The refusal has to leave the stored value where it was, not write and then complain.
+    expect(store.get(personId)!.sleepTargetMinutes).toBe(DEFAULT_SLEEP_TARGET_MINUTES)
+  })
+
+  // 8 is eight hours typed into a field that wanted minutes. Accepting it would put a zero line
+  // eight minutes above the floor of every night that person ever recorded.
+  it('refuses a target that is not whole minutes', () => {
+    const { store, personId } = freshPerson()
+    expect(() => store.setSleepTargetMinutes(personId, 450.5)).toThrow()
+    expect(store.get(personId)!.sleepTargetMinutes).toBe(DEFAULT_SLEEP_TARGET_MINUTES)
+  })
+
+  it('accepts both ends of the range', () => {
+    const { store, personId } = freshPerson()
+    store.setSleepTargetMinutes(personId, SLEEP_TARGET_MINUTES_RANGE.min)
+    expect(store.get(personId)!.sleepTargetMinutes).toBe(60)
+    store.setSleepTargetMinutes(personId, SLEEP_TARGET_MINUTES_RANGE.max)
+    expect(store.get(personId)!.sleepTargetMinutes).toBe(1080)
+  })
+
+  // The same assertion setBirthDate carries, for the same reason: the sleep balance card computes
+  // at read time from this column, so nothing stored has to be rebuilt when it moves.
+  it('leaves the derivation stamp alone, because nothing derived reads it', () => {
+    const { store, personId } = freshPerson()
+    const before = store.get(personId)!.builtDerivationVersion
+    store.setSleepTargetMinutes(personId, 450)
     expect(store.get(personId)!.builtDerivationVersion).toBe(before)
   })
 })

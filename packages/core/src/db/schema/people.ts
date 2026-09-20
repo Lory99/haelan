@@ -38,6 +38,24 @@ export const people = sqliteTable('people', {
   // the same moment.
   birthDate: text('birth_date'),
   sex: text('sex', { enum: ['male', 'female'] }),
+  // How much sleep this person is aiming for, in minutes. The first stored preference in the app
+  // beyond the profile fields above, and worth marking as such: everything else this table holds
+  // is either identity (a name, a zone) or an input to a stored derivation (a birthday, a sex),
+  // while this one is a number the reader chose and only a read time comparison consumes. Nothing
+  // derived reads it, so unlike `timezone` a write here clears no stamp - see
+  // PeopleStore.setSleepTargetMinutes, and see the sleep balance card, which is its only reader.
+  //
+  // Not null and defaulted rather than nullable, because 480 is a real answer for a person who
+  // has never opened Settings. Null would push a `?? 480` into every reader, which is the "two
+  // answers to one question" shape this codebase rejects.
+  //
+  // The 480 is deliberately a literal rather than an import of DEFAULT_SLEEP_TARGET_MINUTES
+  // (derive/metrics.ts, which is where it is documented and which the browser can reach): this
+  // module is the data layer, and pointing it at the metric catalogue would invert the direction
+  // every other import between the two runs. upgrade-rehearsal.test.ts holds the two together by
+  // comparing this default against the one the generated migration writes, so a change to either
+  // alone fails rather than shipping two answers.
+  sleepTargetMinutes: integer('sleep_target_minutes').notNull().default(480),
   // What this person's tiers 2 and 3 were built with. Per person rather than instance wide,
   // because that is what makes an interrupted rebuild resumable: a person carrying the current
   // numbers is already done. Null on a database whose data predates M2e, which is the case the

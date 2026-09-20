@@ -1,7 +1,8 @@
-﻿import { eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { DbOrTx } from '../db/open.ts'
 import { people } from '../db/schema/index.ts'
 import { ConfigError } from '../errors.ts'
+import { DEFAULT_SLEEP_TARGET_MINUTES, SLEEP_TARGET_MINUTES_RANGE } from '../derive/metrics.ts'
 import { MAPPING_VERSION } from '../api/version.ts'
 import { DERIVATION_VERSION } from '../derive/version.ts'
 
@@ -11,6 +12,7 @@ export interface PersonRow {
   timezone: string
   birthDate: string | null
   sex: 'male' | 'female' | null
+  sleepTargetMinutes: number
   builtMappingVersion: number | null
   builtDerivationVersion: number | null
 }
@@ -37,13 +39,17 @@ export class PeopleStore {
    * rows built by something older" rather than "has rows, or does not, we cannot tell".
    */
   create(
-    input: Omit<PersonRow, 'birthDate' | 'sex' | 'builtMappingVersion' | 'builtDerivationVersion'>
+    input: Omit<PersonRow, 'birthDate' | 'sex' | 'sleepTargetMinutes' | 'builtMappingVersion'
+      | 'builtDerivationVersion'>
       & { nowMs: number },
   ): PersonRow {
     this.#db.insert(people).values({
       id: input.id,
       displayName: input.displayName,
       timezone: input.timezone,
+      // The sleep target is left to the column's own default rather than written here: 480 is a
+      // fact about the schema (see the column's own comment), and repeating it in this insert
+      // would make two places to change it and one of them silent.
       createdAtMs: input.nowMs,
       builtMappingVersion: MAPPING_VERSION,
       builtDerivationVersion: DERIVATION_VERSION,
@@ -54,6 +60,7 @@ export class PeopleStore {
       timezone: input.timezone,
       birthDate: null,
       sex: null,
+      sleepTargetMinutes: DEFAULT_SLEEP_TARGET_MINUTES,
       builtMappingVersion: MAPPING_VERSION,
       builtDerivationVersion: DERIVATION_VERSION,
     }
@@ -68,6 +75,7 @@ export class PeopleStore {
         timezone: row.timezone,
         birthDate: row.birthDate ?? null,
         sex: row.sex ?? null,
+        sleepTargetMinutes: row.sleepTargetMinutes,
         builtMappingVersion: row.builtMappingVersion ?? null,
         builtDerivationVersion: row.builtDerivationVersion ?? null,
       }
@@ -82,6 +90,7 @@ export class PeopleStore {
         timezone: row.timezone,
         birthDate: row.birthDate ?? null,
         sex: row.sex ?? null,
+        sleepTargetMinutes: row.sleepTargetMinutes,
         builtMappingVersion: row.builtMappingVersion ?? null,
         builtDerivationVersion: row.builtDerivationVersion ?? null,
       }))
@@ -161,6 +170,33 @@ export class PeopleStore {
       throw new ConfigError(`sex must be 'male' or 'female'`)
     }
     this.#db.update(people).set({ sex }).where(eq(people.id, id)).run()
+  }
+
+  /**
+   * The nightly figure the sleep balance card measures a night against, once this person has no
+   * baseline of their own to be measured against instead.
+   *
+   * Cheap, like setBirthDate and unlike setTimezone: nothing derived reads this column, so the
+   * derivation stamp is deliberately not cleared here. The card computes at read time, from this
+   * number and from whatever is already stored, so a change to it changes what the next page load
+   * draws and nothing that has already been written. CONTRIBUTING asks a change like this for a
+   * version bump first; this is the sentence saying why neither version moves.
+   *
+   * The range is enforced here rather than only in the form, because a route is reachable without
+   * the form: 8 typed into a field that wanted minutes is a six times too long night, and a card
+   * silently comparing every night against 8 minutes would state a surplus with nothing wrong on
+   * screen to explain it.
+   */
+  setSleepTargetMinutes(id: string, minutes: number): void {
+    if (!Number.isInteger(minutes)) {
+      throw new ConfigError(`a sleep target must be whole minutes, got '${minutes}'`)
+    }
+    if (minutes < SLEEP_TARGET_MINUTES_RANGE.min || minutes > SLEEP_TARGET_MINUTES_RANGE.max) {
+      throw new ConfigError(
+        `a sleep target must be between ${SLEEP_TARGET_MINUTES_RANGE.min} and ${SLEEP_TARGET_MINUTES_RANGE.max} minutes, got ${minutes}`,
+      )
+    }
+    this.#db.update(people).set({ sleepTargetMinutes: minutes }).where(eq(people.id, id)).run()
   }
 
   /**
