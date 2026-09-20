@@ -636,6 +636,16 @@
       "above": "↑ above the {{low}} to {{high}} baseline",
       "within": "→ within the {{low}} to {{high}} baseline"
     },
+    "balance": {
+      "labelTarget": "Balance against your target",
+      "labelBaseline": "Balance against your usual",
+      "basisTarget": "{{reported}} of {{total}} nights against your {{target}} target",
+      "basisBaseline": "{{reported}} of {{total}} nights against your own usual",
+      "chartLabel": "Nightly sleep balance through {{period}}",
+      "column": "Balance",
+      "columnUnit": "Minutes over or under",
+      "axisUnit": "deviation"
+    },
     "units": {
       "minutes": "Minutes",
       "percent": "Percent",
@@ -1001,6 +1011,10 @@
       "sexMale": "Male",
       "sexFemale": "Female",
       "cardioLoadHelp": "Used only to compute your cardio load. Nothing else reads them, and you can clear them at any time.",
+      "sleepTarget": "Sleep target",
+      "sleepTargetHint": "The nightly figure the sleep balance card measures a night against, until you have enough history for it to use your own usual instead. In minutes.",
+      "sleepTargetReadback": "Reads as {{duration}}.",
+      "sleepTargetUnreadable": "Enter a whole number of minutes.",
       "save": "Save",
       "saving": "Saving…",
       "saved": "Saved.",

@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { SLEEP_TARGET_MINUTES_RANGE } from '@haelan/core/metrics'
 import { useTranslation } from '../../i18n/index.js'
 import { useSession } from '../../auth/session.js'
 import { ErrorState } from '../../components/ErrorState.js'
 import { Loading } from '../../components/Loading.js'
 import { queryKeys } from '../../api/queryKeys.js'
+import { formatDuration } from '../../format.js'
 import { useChangePassword, useSaveProfile } from '../../data/useProfile.js'
 import type { ProfileEdit } from '../../data/useProfile.js'
 
@@ -68,6 +70,7 @@ export function Profile() {
     timezone: session.data.timezone,
     birthDate: session.data.birthDate,
     sex: session.data.sex,
+    sleepTargetMinutes: session.data.sleepTargetMinutes,
   }
   const value = draft ?? current
   const edit = (patch: Partial<ProfileEdit>): void => setDraft({ ...value, ...patch })
@@ -75,12 +78,18 @@ export function Profile() {
   // Compared against what is stored, not against whether the field was touched, because that is
   // the same comparison the route makes before it marks anything for a rebuild. A zone typed back
   // to what it already was costs nothing and must not be warned about.
+  //
+  // The sleep target's comparison is gated on the draft holding a number at all, which no other
+  // field needs: an empty number input is not a different target, it is a field with nothing in it
+  // yet, and reading that as a change would light the save button over a body that carries no
+  // sleepTargetMinutes at all.
   const zoneWouldMove = value.timezone !== current.timezone
   const changed = value.displayName !== current.displayName
     || value.username !== current.username
     || zoneWouldMove
     || value.birthDate !== current.birthDate
     || value.sex !== current.sex
+    || (value.sleepTargetMinutes !== undefined && value.sleepTargetMinutes !== current.sleepTargetMinutes)
 
   const submit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault()
@@ -155,6 +164,37 @@ export function Profile() {
             health app asking for a birthday and a sex without saying why is worse than the
             feature it is collected for is worth. */}
         <p className="field-hint">{t('settings.profile.cardioLoadHelp')}</p>
+
+        {/* Minutes, not hours, because that is the unit the column stores and every other sleep
+            figure in this app is a number of minutes (sleep.asleepMinutes and its neighbours all
+            read "Minutes"). An hours field would be the one control on the panel whose unit is not
+            the unit of the thing it writes, and 7.5 hours becoming 450 on the way out is a
+            conversion with a rounding decision hidden inside it. The hint reads the value back as
+            a duration instead, which is where the reader's own thinking actually is, and it says
+            "8h 00m" for 480 without either side of the form doing arithmetic the other does not.
+            No rebuild warning, unlike the timezone above and for the same reason the two fields
+            above carry none: nothing derived reads this, so nothing goes stale when it moves. */}
+        <label className="field">
+          <span className="label">{t('settings.profile.sleepTarget')}</span>
+          <input className="input" type="number" inputMode="numeric" step={15}
+            min={SLEEP_TARGET_MINUTES_RANGE.min} max={SLEEP_TARGET_MINUTES_RANGE.max}
+            value={value.sleepTargetMinutes ?? ''}
+            onChange={(e) => edit({
+              // '' rather than Number(''), which is 0, is the whole reason this control carries an
+              // absent value in its draft type while every other field here carries a string. A
+              // cleared number input is not a statement that the target is zero minutes: it is a
+              // field the reader is midway through retyping, and the panel's own `changed`
+              // comparison keeps the save button disabled until it holds a number again rather
+              // than sending a value the store would refuse.
+              sleepTargetMinutes: e.currentTarget.value === '' ? undefined : Number(e.currentTarget.value),
+            })} />
+          <span className="field-hint">
+            {t('settings.profile.sleepTargetHint')}{' '}
+            {value.sleepTargetMinutes === undefined
+              ? t('settings.profile.sleepTargetUnreadable')
+              : t('settings.profile.sleepTargetReadback', { duration: formatDuration(value.sleepTargetMinutes) })}
+          </span>
+        </label>
 
         <div className="form-actions">
           <button type="submit" className="button button-primary" disabled={save.isPending || !changed}>

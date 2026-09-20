@@ -636,6 +636,16 @@
       "above": "↑ boven de baseline van {{low}} tot {{high}}",
       "within": "→ binnen de baseline van {{low}} tot {{high}}"
     },
+    "balance": {
+      "labelTarget": "Balans tegen je doel",
+      "labelBaseline": "Balans tegen je gebruikelijke",
+      "basisTarget": "{{reported}} van {{total}} nachten tegen je doel van {{target}}",
+      "basisBaseline": "{{reported}} van {{total}} nachten tegen je eigen gebruikelijke",
+      "chartLabel": "Slaapbalans per nacht in {{period}}",
+      "column": "Balans",
+      "columnUnit": "Minuten over of onder",
+      "axisUnit": "afwijking"
+    },
     "units": {
       "minutes": "Minuten",
       "percent": "Percentage",
@@ -1001,6 +1011,10 @@
       "sexMale": "Man",
       "sexFemale": "Vrouw",
       "cardioLoadHelp": "Alleen gebruikt om je cardiobelasting te berekenen. Niets anders leest ze, en je kunt ze altijd wissen.",
+      "sleepTarget": "Slaapdoel",
+      "sleepTargetHint": "Het aantal minuten per nacht waartegen de slaapbalanskaart een nacht afzet, tot je genoeg geschiedenis hebt om je eigen gebruikelijke te gebruiken.",
+      "sleepTargetReadback": "Dat is {{duration}}.",
+      "sleepTargetUnreadable": "Vul een heel aantal minuten in.",
       "save": "Opslaan",
       "saving": "Opslaan…",
       "saved": "Opgeslagen.",
