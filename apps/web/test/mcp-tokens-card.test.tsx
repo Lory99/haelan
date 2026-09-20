@@ -46,7 +46,9 @@ const TOKEN: McpTokenRow = {
 
 const SESSION: Session = {
   personId: 'p1', displayName: 'Test', username: 'test', isAdmin: false,
-  timezone: 'Europe/Amsterdam', birthDate: null, sex: null, connected: true, credentialsUnreadable: false,
+  timezone: 'Europe/Amsterdam', birthDate: null, sex: null,
+  sleepTargetMinutes: 480,
+  connected: true, credentialsUnreadable: false,
   baseUrl: 'https://haelan.example.com',
 }
 

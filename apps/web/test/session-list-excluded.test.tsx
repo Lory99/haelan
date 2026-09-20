@@ -33,7 +33,9 @@ function mount(node: ReactNode, lng = 'en'): void {
 }
 
 const PERSON: Session = {
-  personId: 'p1', displayName: 'Test', username: 'test', isAdmin: false, timezone: 'Europe/Amsterdam', birthDate: null, sex: null, connected: true, credentialsUnreadable: false, baseUrl: 'http://localhost:4235',
+  personId: 'p1', displayName: 'Test', username: 'test', isAdmin: false, timezone: 'Europe/Amsterdam', birthDate: null, sex: null,
+  sleepTargetMinutes: 480,
+  connected: true, credentialsUnreadable: false, baseUrl: 'http://localhost:4235',
 }
 
 const CONTROLS = {
