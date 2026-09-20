@@ -396,6 +396,11 @@ export function Sleep() {
   // day before the anchor, so the range being scored is never part of the baseline it is scored
   // against).
   //
+  // Unless the reader switched the baseline off in Settings, in which case the stored target is
+  // the zero line always, even behind a solid baseline, for whoever wants to hold a seven or
+  // eight hour line on purpose. The switch defaults to on, so a reader who never opened Settings
+  // gets the baseline behaviour rather than a flat target they never chose.
+  //
   // While the baseline request is in flight the target is used, which is the same answer as a thin
   // or absent one and needs no third branch: nothing here waits on a query that is already mounted
   // on this page, and the basis line below names which of the two is in force, because "8h short of
@@ -407,9 +412,12 @@ export function Sleep() {
   // happened.
   const balanceZeroLine = useMemo(() => {
     const baseline = asleepBaseline.data?.baseline ?? null
-    if (baseline !== null && !baseline.thin) return { minutes: baseline.center, source: 'baseline' as const }
+    const followBaseline = session.data?.sleepUseBaseline ?? true
+    if (followBaseline && baseline !== null && !baseline.thin) {
+      return { minutes: baseline.center, source: 'baseline' as const }
+    }
     return { minutes: session.data?.sleepTargetMinutes ?? DEFAULT_SLEEP_TARGET_MINUTES, source: 'target' as const }
-  }, [asleepBaseline.data, session.data?.sleepTargetMinutes])
+  }, [asleepBaseline.data, session.data?.sleepTargetMinutes, session.data?.sleepUseBaseline])
 
   // The signed deviation of each night in the range, dense: a night that reported nothing keeps its
   // position and draws no bar, and an excluded night is the same shape rather than a special case,

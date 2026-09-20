@@ -130,3 +130,34 @@ describe('the sleep target, the first stored preference beyond the profile field
     expect(store.get(personId)!.builtDerivationVersion).toBe(before)
   })
 })
+
+describe('the baseline switch beside the sleep target', () => {
+  it('follows the baseline on a person the wizard just created', () => {
+    const { store, personId } = freshPerson()
+    expect(store.get(personId)!.sleepUseBaseline).toBe(true)
+  })
+
+  it('stores the switch off and reads it back', () => {
+    const { store, personId } = freshPerson()
+    store.setSleepUseBaseline(personId, false)
+    expect(store.get(personId)!.sleepUseBaseline).toBe(false)
+    store.setSleepUseBaseline(personId, true)
+    expect(store.get(personId)!.sleepUseBaseline).toBe(true)
+  })
+
+  // A truthy string from a form posted as JSON is not a choice, and saving it as one would hand
+  // the card a preference it reads as a boolean but the database holds as text.
+  it('refuses a switch that is not a boolean', () => {
+    const { store, personId } = freshPerson()
+    expect(() => store.setSleepUseBaseline(personId, 'false' as unknown as boolean)).toThrow()
+    expect(store.get(personId)!.sleepUseBaseline).toBe(true)
+  })
+
+  // The same assertion the target carries, for the same reason: the card computes at read time.
+  it('leaves the derivation stamp alone, because nothing derived reads it', () => {
+    const { store, personId } = freshPerson()
+    const before = store.get(personId)!.builtDerivationVersion
+    store.setSleepUseBaseline(personId, false)
+    expect(store.get(personId)!.builtDerivationVersion).toBe(before)
+  })
+})

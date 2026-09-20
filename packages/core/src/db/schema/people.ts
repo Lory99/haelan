@@ -56,6 +56,14 @@ export const people = sqliteTable('people', {
   // comparing this default against the one the generated migration writes, so a change to either
   // alone fails rather than shipping two answers.
   sleepTargetMinutes: integer('sleep_target_minutes').notNull().default(480),
+  // Whether the sleep balance card may measure against the person's own usual once that is
+  // worth standing on. On unless the reader says otherwise: the baseline is the comparison the
+  // rest of the app makes, and a reader who never opens Settings gets that rather than a flat
+  // eight hours. Off means the stored target above, always, even with a solid baseline behind
+  // it, for whoever wants to hold a seven or eight hour line on purpose. The second stored
+  // preference in the app, after the column above, and cheap in the same way: nothing derived
+  // reads it, so a write here clears no stamp either.
+  sleepUseBaseline: integer('sleep_use_baseline', { mode: 'boolean' }).notNull().default(true),
   // What this person's tiers 2 and 3 were built with. Per person rather than instance wide,
   // because that is what makes an interrupted rebuild resumable: a person carrying the current
   // numbers is already done. Null on a database whose data predates M2e, which is the case the

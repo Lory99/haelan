@@ -45,6 +45,7 @@ const PERSON: Session = {
   personId: 'p1', displayName: 'Test', username: 'test', isAdmin: true,
   timezone: 'Europe/Amsterdam', birthDate: null, sex: null,
   sleepTargetMinutes: 480,
+  sleepUseBaseline: true,
   connected: true, credentialsUnreadable: false, baseUrl: 'http://localhost:4235',
 }
 
@@ -409,6 +410,23 @@ describe('the sleep balance card', () => {
     expect(balanceCard()!.querySelector('.basis')!.textContent).toBe('6 of 7 nights against your 7h 00m target')
     // Against 420: 0, +60, +120, absent, -30, +30, +45 sums to +225.
     expect(headline()).toBe('3h 45m')
+  })
+
+  // The switch beside the target: off means the stored target even behind a solid baseline, for
+  // whoever wants to hold an eight hour line on purpose. The same bars as the baseline case
+  // above measured against 480 instead of 540, which is the -2h 15m every target case states.
+  it('holds the stored target behind a solid baseline when the switch is off', async () => {
+    window.history.replaceState(null, '', WEEK_URL)
+    const restore = stubBalance([], WEEK_NIGHTS, { center: 540, spread: 30, n: 60, thin: false })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } })
+    client.setQueryData(queryKeys.session(), { ...PERSON, sleepUseBaseline: false })
+    const tree = <QueryClientProvider client={client}><Sleep /></QueryClientProvider>
+    await render(client, tree)
+    restore()
+
+    expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep Balance')
+    expect(balanceCard()!.querySelector('.basis')!.textContent).toBe('6 of 7 nights against your 8h 00m target')
+    expect(headline()).toBe('-2h 15m')
   })
 
   // The baseline is fetched against historicalTo, the same anchor the time asleep tile above uses,

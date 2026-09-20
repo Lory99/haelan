@@ -71,6 +71,7 @@ export function Profile() {
     birthDate: session.data.birthDate,
     sex: session.data.sex,
     sleepTargetMinutes: session.data.sleepTargetMinutes,
+    sleepUseBaseline: session.data.sleepUseBaseline,
   }
   const value = draft ?? current
   const edit = (patch: Partial<ProfileEdit>): void => setDraft({ ...value, ...patch })
@@ -90,6 +91,7 @@ export function Profile() {
     || value.birthDate !== current.birthDate
     || value.sex !== current.sex
     || (value.sleepTargetMinutes !== undefined && value.sleepTargetMinutes !== current.sleepTargetMinutes)
+    || value.sleepUseBaseline !== current.sleepUseBaseline
 
   const submit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault()
@@ -194,6 +196,21 @@ export function Profile() {
               ? t('settings.profile.sleepTargetUnreadable')
               : t('settings.profile.sleepTargetReadback', { duration: formatDuration(value.sleepTargetMinutes) })}
           </span>
+        </label>
+
+        {/* On unless the reader says otherwise, and always changeable back: following the baseline
+            is the behaviour for somebody who has never opened Settings, so the switch has to read
+            as a choice rather than as a default the reader never made. The target above stays the
+            zero line while the baseline is thin or absent, and becomes the permanent one the
+            moment this is switched off, which is why the two controls sit beside each other rather
+            than on separate panels. */}
+        <label className="field">
+          <span className="check-row">
+            <input type="checkbox" checked={value.sleepUseBaseline}
+              onChange={(e) => edit({ sleepUseBaseline: e.currentTarget.checked })} />
+            <span className="label">{t('settings.profile.sleepUseBaseline')}</span>
+          </span>
+          <span className="field-hint">{t('settings.profile.sleepUseBaselineHint')}</span>
         </label>
 
         <div className="form-actions">

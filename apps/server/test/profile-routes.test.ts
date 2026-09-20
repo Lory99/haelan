@@ -261,6 +261,50 @@ describe('PUT /api/profile sleep target', () => {
   })
 })
 
+describe('PUT /api/profile baseline switch', () => {
+  it('saves it, echoes it, and carries it on the session', async () => {
+    const response = await saveProfile(adminToken, { sleepUseBaseline: false })
+    expect(response.statusCode).toBe(200)
+    expect(response.json().sleepUseBaseline).toBe(false)
+    // The read side is what the Sleep page and the Settings panel both read: an echo that agreed
+    // with itself while /api/auth/me still answered true would leave the card following a
+    // baseline the reader switched off.
+    expect((await me(adminToken)).json().sleepUseBaseline).toBe(false)
+  })
+
+  it('answers on for a person who has never touched it', async () => {
+    expect((await me(adminToken)).json().sleepUseBaseline).toBe(true)
+  })
+
+  // Absent is "leave it", false is "set it": the column is NOT NULL with a default, so there is
+  // no third state and null is a client mistake, the same rule the target carries.
+  it('leaves the stored value alone when the field is absent', async () => {
+    await saveProfile(adminToken, { sleepUseBaseline: false })
+    await saveProfile(adminToken, { displayName: 'Sam' })
+    expect((await me(adminToken)).json().sleepUseBaseline).toBe(false)
+  })
+
+  // A JSON body carries no booleans apart from real ones: a string 'false' is a client mistake,
+  // and saving it would hand the card a preference it reads as a boolean but holds as text.
+  it('refuses a switch that is not a boolean', async () => {
+    await saveProfile(adminToken, { sleepUseBaseline: false })
+    for (const value of ['false', 1, 0, null]) {
+      const response = await saveProfile(adminToken, { sleepUseBaseline: value })
+      expect(response.statusCode, String(value)).toBe(400)
+      expect(response.json().error.kind, String(value)).toBe('config')
+    }
+    expect((await me(adminToken)).json().sleepUseBaseline).toBe(false)
+  })
+
+  // The same assertion the target carries: nothing derived reads this column either.
+  it('reports no pending rebuild and leaves the derivation stamp standing', async () => {
+    const response = await saveProfile(adminToken, { sleepUseBaseline: false })
+    expect(response.statusCode).toBe(200)
+    expect(response.json().rebuildPending).toBe(false)
+    expect(person('p1')!.builtDerivationVersion).toEqual(expect.any(Number))
+  })
+})
+
 describe('PUT /api/profile/password', () => {
   const NEW_PASSWORD = 'an even better password'
 

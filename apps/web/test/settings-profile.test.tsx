@@ -34,6 +34,7 @@ const SESSION: Session = {
   personId: 'p1', displayName: 'Robin', username: 'robin', isAdmin: true,
   timezone: 'Europe/Amsterdam', birthDate: null, sex: null,
   sleepTargetMinutes: 480,
+  sleepUseBaseline: true,
   connected: true, credentialsUnreadable: false,
   baseUrl: 'http://localhost:4235',
 }
@@ -95,7 +96,7 @@ function click(el: Element): void {
  * changed meaning when it landed.
  */
 const FIELDS = {
-  displayName: 0, username: 1, timezone: 2, birthDate: 3, sleepTarget: 4,
+  displayName: 0, username: 1, timezone: 2, birthDate: 3, sleepTarget: 4, sleepUseBaseline: 5,
 } as const
 
 const fields = (): HTMLInputElement[] => [...container!.querySelectorAll('input')] as HTMLInputElement[]
@@ -129,9 +130,12 @@ const json = (status: number, payload: unknown) =>
   new Response(JSON.stringify(payload), { status, headers: { 'content-type': 'application/json' } })
 
 describe('the profile section', () => {
-  it('shows the session\'s own name, username, time zone, birthday, sex and sleep target', () => {
+  it('shows the session\'s own name, username, time zone, birthday, sex, sleep target and baseline switch', () => {
     mountSection()
-    expect(fields().map((f) => f.value)).toEqual(['Robin', 'robin', 'Europe/Amsterdam', '', '480', '', ''])
+    // The switch is a checkbox, so its "value" is the constant 'on' rather than anything the
+    // session holds; the stored position is asserted on `checked` in the switch's own cases
+    // below, not here.
+    expect(fields().map((f) => f.value)).toEqual(['Robin', 'robin', 'Europe/Amsterdam', '', '480', 'on', '', ''])
     expect(sexSelect().value).toBe('')
   })
 
@@ -142,7 +146,7 @@ describe('the profile section', () => {
     mountSection()
     expect(container!.innerHTML).not.toMatch(/\bsettings\.[a-zA-Z][a-zA-Z.]*\b/)
     expect([...container!.querySelectorAll('.field .label')].map((n) => n.textContent))
-      .toEqual(['Name', 'Username', 'Time zone', 'Birthday', 'Sex', 'Sleep target', 'Current password', 'New password'])
+      .toEqual(['Name', 'Username', 'Time zone', 'Birthday', 'Sex', 'Sleep target', 'Follow my usual', 'Current password', 'New password'])
   })
 
   // The sentence that justifies asking for either field in the first place - not decoration, the
@@ -400,7 +404,7 @@ describe('the sleep target control', () => {
   it('saves an edited target with the rest of the profile', async () => {
     const api = mockProfileApi(() => json(200, {
       displayName: 'Robin', username: 'robin', timezone: 'Europe/Amsterdam',
-      birthDate: null, sex: null, sleepTargetMinutes: 450, rebuildPending: false,
+      birthDate: null, sex: null, sleepTargetMinutes: 450, sleepUseBaseline: true, rebuildPending: false,
     }))
     const client = mountSection()
 
@@ -436,7 +440,7 @@ describe('the sleep target control', () => {
   it('sends nothing for a target the reader has cleared', async () => {
     const api = mockProfileApi(() => json(200, {
       displayName: 'Bart', username: 'robin', timezone: 'Europe/Amsterdam',
-      birthDate: null, sex: null, sleepTargetMinutes: 480, rebuildPending: false,
+      birthDate: null, sex: null, sleepTargetMinutes: 480, sleepUseBaseline: true, rebuildPending: false,
     }))
     const client = mountSection()
 
@@ -477,5 +481,51 @@ describe('the sleep target control', () => {
     mountSection()
     type(fields()[FIELDS.sleepTarget]!, '450')
     expect(container!.querySelector('.profile-warning')).toBeNull()
+  })
+})
+
+/**
+ * The switch beside the target: on means the card measures against the person's own usual once
+ * that is worth standing on, off means the stored target always. A checkbox rather than a second
+ * number input, and always holding a boolean, so there is no cleared-mid-edit state to omit the
+ * way the target's draft does.
+ */
+describe('the baseline switch', () => {
+  it('shows the stored switch position', () => {
+    mountSection()
+    expect(fields()[FIELDS.sleepUseBaseline]!.checked).toBe(true)
+  })
+
+  it('shows an opted-out switch as off', () => {
+    mountSection({ sleepUseBaseline: false })
+    expect(fields()[FIELDS.sleepUseBaseline]!.checked).toBe(false)
+  })
+
+  it('saves a flipped switch with the rest of the profile', async () => {
+    const api = mockProfileApi(() => json(200, {
+      displayName: 'Robin', username: 'robin', timezone: 'Europe/Amsterdam',
+      birthDate: null, sex: null, sleepTargetMinutes: 480, sleepUseBaseline: false, rebuildPending: false,
+    }))
+    const client = mountSection()
+
+    click(fields()[FIELDS.sleepUseBaseline]!)
+    expect(saveButton().disabled).toBe(false)
+    click(saveButton())
+    await flush(client, () => container!.innerHTML)
+    api.restore()
+
+    expect(api.requests[0]).toMatchObject({
+      method: 'PUT',
+      url: '/api/profile',
+      body: { sleepUseBaseline: false },
+    })
+  })
+
+  it('leaves the save button disabled when the switch is flipped back', () => {
+    mountSection()
+    click(fields()[FIELDS.sleepUseBaseline]!)
+    expect(saveButton().disabled).toBe(false)
+    click(fields()[FIELDS.sleepUseBaseline]!)
+    expect(saveButton().disabled).toBe(true)
   })
 })

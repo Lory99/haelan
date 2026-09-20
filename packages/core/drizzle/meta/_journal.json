@@ -176,6 +176,13 @@
       "when": 1789905936482,
       "tag": "0024_gorgeous_maggott",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1789914056985,
+      "tag": "0025_lyrical_charles_xavier",
+      "breakpoints": true
     }
   ]
 }

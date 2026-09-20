@@ -12,8 +12,9 @@ export interface PersonRow {
   timezone: string
   birthDate: string | null
   sex: 'male' | 'female' | null
-  sleepTargetMinutes: number
-  builtMappingVersion: number | null
+    sleepTargetMinutes: number
+    sleepUseBaseline: boolean
+    builtMappingVersion: number | null
   builtDerivationVersion: number | null
 }
 
@@ -39,7 +40,7 @@ export class PeopleStore {
    * rows built by something older" rather than "has rows, or does not, we cannot tell".
    */
   create(
-    input: Omit<PersonRow, 'birthDate' | 'sex' | 'sleepTargetMinutes' | 'builtMappingVersion'
+    input: Omit<PersonRow, 'birthDate' | 'sex' | 'sleepTargetMinutes' | 'sleepUseBaseline' | 'builtMappingVersion'
       | 'builtDerivationVersion'>
       & { nowMs: number },
   ): PersonRow {
@@ -60,7 +61,12 @@ export class PeopleStore {
       timezone: input.timezone,
       birthDate: null,
       sex: null,
-      sleepTargetMinutes: DEFAULT_SLEEP_TARGET_MINUTES,
+        sleepTargetMinutes: DEFAULT_SLEEP_TARGET_MINUTES,
+        // The column's own default, restated: the insert above leaves it to the schema, and this
+        // return states what that default is. upgrade-rehearsal.test.ts holds the schema default
+        // against the migration's, and the default test below holds this return against both, so
+        // the three cannot drift to three answers.
+        sleepUseBaseline: true,
       builtMappingVersion: MAPPING_VERSION,
       builtDerivationVersion: DERIVATION_VERSION,
     }
@@ -76,6 +82,7 @@ export class PeopleStore {
         birthDate: row.birthDate ?? null,
         sex: row.sex ?? null,
         sleepTargetMinutes: row.sleepTargetMinutes,
+        sleepUseBaseline: row.sleepUseBaseline,
         builtMappingVersion: row.builtMappingVersion ?? null,
         builtDerivationVersion: row.builtDerivationVersion ?? null,
       }
@@ -91,6 +98,7 @@ export class PeopleStore {
         birthDate: row.birthDate ?? null,
         sex: row.sex ?? null,
         sleepTargetMinutes: row.sleepTargetMinutes,
+        sleepUseBaseline: row.sleepUseBaseline,
         builtMappingVersion: row.builtMappingVersion ?? null,
         builtDerivationVersion: row.builtDerivationVersion ?? null,
       }))
@@ -197,6 +205,24 @@ export class PeopleStore {
       )
     }
     this.#db.update(people).set({ sleepTargetMinutes: minutes }).where(eq(people.id, id)).run()
+  }
+
+  /**
+   * Whether the sleep balance card may measure against this person's own usual once that is
+   * worth standing on. Off means the stored target, always, for whoever wants to hold a seven
+   * or eight hour line on purpose.
+   *
+   * Cheap in the same way setSleepTargetMinutes is: nothing derived reads this column, so the
+   * derivation stamp is deliberately not cleared here either. The type is enforced here rather
+   * than only in the form for the same reason the range is enforced there: a route is reachable
+   * without the form, and a truthy string saved as a preference would read back as a boolean
+   * the card could not trust.
+   */
+  setSleepUseBaseline(id: string, useBaseline: boolean): void {
+    if (typeof useBaseline !== 'boolean') {
+      throw new ConfigError(`whether to use the baseline must be a boolean, got '${useBaseline}'`)
+    }
+    this.#db.update(people).set({ sleepUseBaseline: useBaseline }).where(eq(people.id, id)).run()
   }
 
   /**

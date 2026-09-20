@@ -180,6 +180,7 @@ describe('ErrorBoundary', () => {
       birthDate: null,
       sex: null,
       sleepTargetMinutes: 480,
+      sleepUseBaseline: true,
       connected: true,
       credentialsUnreadable: false,
       baseUrl: 'http://localhost:4235',

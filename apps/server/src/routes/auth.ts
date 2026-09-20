@@ -112,6 +112,11 @@ export function registerAuth(app: FastifyInstance): void {
       // on Settings, two screens that otherwise share only this payload, which is why it is here
       // rather than behind its own route. Not nullable: the column is not null with a default.
       sleepTargetMinutes: person?.sleepTargetMinutes ?? DEFAULT_SLEEP_TARGET_MINUTES,
+      // Beside the target, read by the same two screens: whether the card may measure against
+      // the person's own usual once that is worth standing on. True for rows predating the
+      // column the same way 480 is the target for rows predating its own, so a database that
+      // has not run the migration yet still answers one preference rather than none.
+      sleepUseBaseline: person?.sleepUseBaseline ?? true,
       // Whether this person has a *usable* Google connection - a credentials row whose token was
       // never revoked, matching listConnectedPeople's own predicate. A revoked row is not a
       // connection in any sense the UI cares about: it cannot sync, so it must show the same

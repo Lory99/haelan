@@ -94,6 +94,7 @@ describe('auth', () => {
       // nullable and not absent: 480 is a real answer for somebody who has never opened Settings,
       // which is what keeps every reader of this field from supplying its own fallback.
       sleepTargetMinutes: 480,
+      sleepUseBaseline: true,
       connected: false, credentialsUnreadable: false,
       baseUrl: 'http://localhost:4235',
     })

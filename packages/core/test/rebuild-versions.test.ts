@@ -14,8 +14,9 @@ const person = (over: Partial<PersonRow> = {}): PersonRow => ({
   // Present because PersonRow requires it, and read by nothing on this page: the point of this
   // fixture is the two version stamps. See people-profile-fields.test.ts for the column's own
   // behaviour.
-  sleepTargetMinutes: DEFAULT_SLEEP_TARGET_MINUTES,
-  builtMappingVersion: MAPPING_VERSION,
+    sleepTargetMinutes: DEFAULT_SLEEP_TARGET_MINUTES,
+    sleepUseBaseline: true,
+    builtMappingVersion: MAPPING_VERSION,
   builtDerivationVersion: DERIVATION_VERSION,
   ...over,
 })

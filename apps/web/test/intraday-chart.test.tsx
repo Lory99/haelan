@@ -97,6 +97,7 @@ function optionForPoints(
   const session: Session = {
     personId: 'p1', displayName: 'Wilma', username: 'wilma', isAdmin: false, timezone: 'UTC', birthDate: null, sex: null,
     sleepTargetMinutes: 480,
+    sleepUseBaseline: true,
     connected: true, credentialsUnreadable: false, baseUrl: 'http://localhost:4235',
   }
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } })
@@ -195,6 +196,7 @@ describe('IntradayHeartRate time of day', () => {
   const SESSION: Session = {
     personId: 'p1', displayName: 'Wilma', username: 'wilma', isAdmin: false, timezone: 'Europe/Amsterdam', birthDate: null, sex: null,
     sleepTargetMinutes: 480,
+    sleepUseBaseline: true,
     connected: true, credentialsUnreadable: false, baseUrl: 'http://localhost:4235',
   }
   // 20:00 UTC on an August day is 22:00 in Europe/Amsterdam (CEST, UTC+2). Picked to match the

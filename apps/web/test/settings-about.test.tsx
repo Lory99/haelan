@@ -27,6 +27,7 @@ import type { UpdateStatus } from '../src/data/useUpdateCheck.js'
 const MEMBER: Session = {
   personId: 'p1', displayName: 'Robin', username: 'robin', isAdmin: false, timezone: 'Europe/Amsterdam', birthDate: null, sex: null,
   sleepTargetMinutes: 480,
+  sleepUseBaseline: true,
   connected: true, credentialsUnreadable: false, baseUrl: 'http://localhost:4235',
 }
 

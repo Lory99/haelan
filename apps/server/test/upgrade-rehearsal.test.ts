@@ -428,9 +428,21 @@ describe('the upgrade path', () => {
         // Every (row, column) pair carrying something other than what the column declares, not a
         // collapsed boolean: a failure here names exactly which row and which added column carried
         // the wrong value, rather than only that the table failed the check somewhere.
+        //
+        // Spelled out for the boolean case rather than folded into String(): SQLite has no boolean
+        // type, so a DEFAULT true the migration writes materialises as 1 on the row while the
+        // literal above still reads `true`. Rewriting the migration to DEFAULT 1 would only move
+        // the mismatch to the schema half below, which compares the same literal against the
+        // column's own default, so the normalisation lives here, where the reading happens.
         const declared = addedColumnDefaults()
         const backfilled = addedRows.flatMap((row, rowIndex) => addedCols
-          .filter((c) => row[c] !== null && String(row[c]) !== declared.get(c))
+          .filter((c) => {
+            if (row[c] === null) return false
+            const want = declared.get(c)
+            const read = String(row[c])
+            if (read === want) return false
+            return !((want === 'true' && read === '1') || (want === 'false' && read === '0'))
+          })
           .map((c) => ({ row: rowIndex, column: c, value: row[c], declared: declared.get(c) ?? null })))
         expect(
           backfilled,
