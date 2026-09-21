@@ -5,14 +5,16 @@
 *Hælan* is Old English for "to heal, to make whole" — the root of both *heal* and *health*. The
 package, the image and the command are all `haelan`.
 
-**A self-hosted dashboard and local mirror for your own health data, built on the Google Health
-API v4.** One household, one instance, no telemetry, no hosted offering.
+**A self-hosted dashboard and local mirror for your own health data, read from Google's Health API
+or, for an all-Android household, from a companion app that needs no Google Cloud project at
+all.** One household, one instance, no telemetry, no hosted offering.
 
 [![CI](https://github.com/bardesss/haelan/actions/workflows/ci.yml/badge.svg)](https://github.com/bardesss/haelan/actions/workflows/ci.yml)
 [![License: AGPL-3.0-only](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/bardesss/haelan?sort=semver)](https://github.com/bardesss/haelan/releases)
 [![Container image](https://img.shields.io/badge/ghcr.io-haelan-blue?logo=docker)](https://github.com/bardesss/haelan/pkgs/container/haelan)
 [![Site](https://img.shields.io/badge/site-bardesss.github.io%2Fhaelan-blue)](https://bardesss.github.io/haelan/)
+[![Add to Obtainium](https://img.shields.io/badge/Add%20to-Obtainium-1a7f37?style=flat)](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%7B%22id%22%3A%22com.haelan.android%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fbardesss%2Fhaelan%22%2C%22author%22%3A%22bardesss%22%2C%22name%22%3A%22H%C3%A6lan%22%2C%22preferredApkIndex%22%3A0%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%2C%5C%22fallbackToOlderReleases%5C%22%3Atrue%2C%5C%22filterReleaseTitlesByRegEx%5C%22%3A%5C%22%5EAndroid%5C%22%2C%5C%22verifyLatestTag%5C%22%3Afalse%7D%22%2C%22overrideSource%22%3A%22GitHub%22%7D)
 
 The reason it is self-hosted is structural rather than ideological. Google caps an unverified
 OAuth client at 100 users, and clearing verification for health scopes needs a paid third-party
@@ -44,7 +46,7 @@ catching them is a standing part of how the project is built rather than a past 
      page is built from. Do not edit between the markers by hand: a test regenerates this and fails
      when it disagrees. -->
 <!-- screenshots:start -->
-![The Hælan dashboard: daily steps, resting heart rate, sleep and recovery, with charts for the month.](assets/screenshots/dashboard.png)
+![The Hælan dashboard: a recovery index, daily steps, resting heart rate, sleep and mean heart rate, each with a chart for the month and a comparison against the period before it.](assets/screenshots/dashboard.png)
 
 ![The Activity page: a year heatmap of daily movement above a list of workouts, each with its distance, duration and average heart rate.](assets/screenshots/activity.png)
 
@@ -121,7 +123,10 @@ An instance reads a household's data through Google's Health API. A household wh
 uses Android can skip that entirely: the companion app reads Health Connect on the phone and sends
 readings to the instance directly, with no Cloud project and no console.
 
-[![Add to Obtainium](https://img.shields.io/badge/Add%20to-Obtainium-1a7f37?style=flat)](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%7B%22id%22%3A%22com.haelan.android%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fbardesss%2Fhaelan%22%2C%22author%22%3A%22bardesss%22%2C%22name%22%3A%22H%C3%A6lan%22%2C%22preferredApkIndex%22%3A0%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%2C%5C%22fallbackToOlderReleases%5C%22%3Atrue%2C%5C%22filterReleaseTitlesByRegEx%5C%22%3A%5C%22%5EAndroid%5C%22%2C%5C%22verifyLatestTag%5C%22%3Afalse%7D%22%2C%22overrideSource%22%3A%22GitHub%22%7D)
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%7B%22id%22%3A%22com.haelan.android%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fbardesss%2Fhaelan%22%2C%22author%22%3A%22bardesss%22%2C%22name%22%3A%22H%C3%A6lan%22%2C%22preferredApkIndex%22%3A0%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%2C%5C%22fallbackToOlderReleases%5C%22%3Atrue%2C%5C%22filterReleaseTitlesByRegEx%5C%22%3A%5C%22%5EAndroid%5C%22%2C%5C%22verifyLatestTag%5C%22%3Afalse%7D%22%2C%22overrideSource%22%3A%22GitHub%22%7D">
+  <img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png"
+    alt="Get it on Obtainium" height="54">
+</a>
 
 Releases tagged `android-v` carry a signed APK rather than a Google Play listing, so
 [Obtainium](https://github.com/ImranR98/Obtainium) is how updates arrive. The button carries the
@@ -130,6 +135,27 @@ stream.
 
 The Android path asks less of the person setting it up, and it gives some things up in exchange, which
 `apps/android/README.md` lists.
+
+### Workout routes
+
+The companion app is also the only way a route reaches an instance. Google's Health API returns no
+route points at all, so a workout synced from Google can say a GPS route was recorded and never show
+one; a workout synced from a phone carries the track itself, drawn on the workout's page as a line.
+
+Health Connect asks for route access separately from everything else, and a route nobody granted
+simply does not arrive. The workout page says nothing in that case rather than guessing why.
+
+Coordinates are the most identifying thing an instance stores, so they are treated as such. The
+line is drawn by the page itself, from the points, with no map library and no request leaving your
+network. No agent tool returns a route, and the demo below carries a synthetic one that closes on
+itself in the open ocean rather than anybody's real track.
+
+If you want streets under the line, **Settings -> Info -> "Show a basemap under a workout's
+route"** turns it on, and only an admin can. Switched on, the page fetches map tiles from
+OpenStreetMap. That provider then sees the coordinates of every route it draws, including where
+each one starts and ends, which is usually home. It is off by default, switching it back off stops
+it, and a tab left open on an instance where an admin has just switched it off checks again before
+it draws anything.
 
 ## Deploy
 
@@ -428,9 +454,12 @@ the person stamped at the current version and starts normally.
 
 ### Knowing there is one
 
-Nothing tells you. That is deliberate: this program contacts Google on your behalf and nobody else,
-and a version check that phoned a third party without being asked would quietly end that property
-for every instance that upgraded into it.
+Nothing tells you. That is deliberate: left alone, this program contacts Google on your behalf and
+nobody else, and a version check that phoned a third party without being asked would quietly end
+that property for every instance that upgraded into it.
+
+Two settings can widen that, and both are off until an admin turns them on: this one, and the route
+basemap described above. Neither is on by default, and nothing turns either on for you.
 
 If you want it, **Settings -> Info -> "Check GitHub for new releases"** turns it on, and only an
 admin can. Switched on, the server asks `api.github.com` for this repository's newest release tag
@@ -505,12 +534,12 @@ documents for whoever is building, not part of what ships.
 
 ## Translations
 
-The app ships English and Dutch, both complete at 1001 keys. Locales are plain JSON
+The app ships English and Dutch, both complete at 1009 keys. Locales are plain JSON
 (`apps/web/src/i18n/en.json`, `apps/web/src/i18n/nl.json`), imported and registered in a
 `resources` map in `apps/web/src/i18n/index.tsx`; `fallbackLng` is `en`. The language is derived
 from the browser's `navigator.language` - there is no in-app language switch.
 
-Adding one is three steps: copy `en.json`, translate its 1001 keys, then import and register it
+Adding one is three steps: copy `en.json`, translate its 1009 keys, then import and register it
 beside `en` and `nl`. Translate all of them. i18next falls back per key rather than per file, so a
 half-finished locale does not show the fallback language throughout - it shows one screen carrying
 two languages at once, which is worse than shipping no locale at all.

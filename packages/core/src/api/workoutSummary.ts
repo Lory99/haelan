@@ -129,7 +129,29 @@ export interface WorkoutDetail {
   displayName: string | null
   notes: string | null
   activeDurationSeconds: number | null
-  hasGps: boolean
+  /**
+   * true or false is the provider speaking for itself; null is this app having nothing to go on.
+   * Google always sends exerciseMetadata.hasGps (probe/findings/field-map.md), so a Google session
+   * is always true or false, never null. The companion sync never sends exerciseMetadata at all
+   * (task-3-report.md, Step 1), so a phone session is always null here today - not false, because
+   * false would claim this app knows no route was recorded, and a phone session with no route
+   * points could just as easily be one Health Connect would not release without a foreground
+   * consent turn the headless sync never runs. Collapsing that null into false is what the header's
+   * old one-sentence copy did, and it was a lie about that exact session.
+   */
+  hasGps: boolean | null
+  /**
+   * A route that exists and was not released, as opposed to a workout that has none.
+   *
+   * `hasGps` cannot carry this. It is null for every companion session, because Health Connect has
+   * no such field, and that null is the ordinary state rather than a signal. This is the phone
+   * saying something specific: Health Connect answered ConsentRequired, so there IS a track and it
+   * is behind a per-session consent the headless sync cannot ask for.
+   *
+   * false is the answer for every session that did not say so, including every Google one, which
+   * is why it is a boolean rather than a third null: nothing else in the system can produce it.
+   */
+  routeConsentRequired: boolean
   poolLengthMeters: number | null
   runVo2Max: number | null
   averageSpeedMetersPerSecond: number | null
@@ -287,7 +309,8 @@ function eventsFrom(value: unknown): WorkoutEvent[] {
  * recorded zero survives, and a field the provider never sent stays null rather than becoming a
  * printed zero. See workoutSummary's own comment for why that distinction is the point.
  *
- * hasGps is the one deliberate exception, a boolean rather than a tri-state: see its test.
+ * hasGps is the one field this function does not resolve to false on an absent metadata object:
+ * see its own comment on WorkoutDetail for why absence has to survive as null.
  */
 export function workoutDetail(attrs: unknown): WorkoutDetail {
   const record = isRecord(attrs) ? attrs : {}
@@ -300,7 +323,10 @@ export function workoutDetail(attrs: unknown): WorkoutDetail {
     displayName: typeof record.displayName === 'string' ? record.displayName : null,
     notes: typeof record.notes === 'string' ? record.notes : null,
     activeDurationSeconds: durationSecondsOrNull(record.activeDuration),
-    hasGps: metadata.hasGps === true,
+    hasGps: typeof metadata.hasGps === 'boolean' ? metadata.hasGps : null,
+    // Strictly true, never truthy: this is read straight off an archived body, so a string or a
+    // number that drifted into the field must not read as a household's route being withheld.
+    routeConsentRequired: record.routeConsentRequired === true,
     poolLengthMeters: poolLengthMillimeters === null
       ? null
       : poolLengthMillimeters / MILLIMETERS_PER_METER,

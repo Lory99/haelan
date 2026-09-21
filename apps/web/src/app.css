@@ -102,6 +102,12 @@ body {
   display: flex; align-items: center; gap: var(--space-2); min-height: 44px;
   color: var(--text-secondary); text-decoration: none; font-size: var(--font-size-sm);
 }
+/* Every other surface that renders an Icon sizes it here, which is the pattern .brand-mark's own
+   comment describes. This one did not, and an svg carrying a viewBox and no width is sized by its
+   container: in a flex row with a link's worth of space to fill, the documentation glyph grew to
+   the height of the card. The layout harness never saw it, because it is on a settings tab the
+   harness does not open. */
+.about-link svg { width: 17px; height: 17px; flex: none; }
 .about-link:hover { color: var(--text-primary); text-decoration: underline; }
 .about-link:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-sm); }
 /* A link since the account page exists, so it takes the same text-decoration reset .rail-item
@@ -325,6 +331,14 @@ html:has(dialog.period-sheet[open]) { overflow: hidden; }
 /* The freshness has the rail's width to itself in the foot and wraps to a second line rather than
    being clipped; in the top bar it is the compact spelling, which fits on one. */
 .sync-control .synced { min-width: 0; }
+/* In the foot there are now TWO of these sentences, the Google one and the phone one, and they
+   stall independently so neither can be dropped. Three flex items in a 200px rail left each
+   sentence wrapping inside a column a few words wide, which read as one mangled paragraph rather
+   than two lines. Each takes the full width of the foot instead, stacked under the button.
+   Not applied in the top bar, where the compact spelling is a few characters and belongs on the
+   same row as the button. */
+.rail-foot .sync-control { flex-wrap: wrap; }
+.rail-foot .sync-control .synced { flex: 1 0 100%; }
 /* Collapsed, the rail is a 60px icon strip and the button is the whole of what a sighted reader
    gets. The sentence survives on the button's own title and accessible name, which is the same
    trade .rail-item makes with its sr-only label one rule group up. */
@@ -407,6 +421,29 @@ html:has(dialog.period-sheet[open]) { overflow: hidden; }
    same reason .session-list carries it: a grid child defaults to min-content and a long label would
    push the track wider than its share. */
 .workout-dynamic-tile { min-width: 0; }
+
+/* WorkoutRoute.tsx's own card: the drawn trace, nothing numeric beside it since fix round 1 (see
+   that file's own comment on why). Sized by the viewBox drawn there, never by a fixed pixel box
+   here: `height: auto` is what lets that viewBox's own aspect ratio, not this stylesheet, decide
+   the drawn shape. */
+/* max-height is what stops a tall route from taking over the page. `height: auto` sizes the
+   element from the viewBox's aspect ratio, and that ratio is the route's own shape: a run straight
+   up a coastline projects to something like 1:10, which across a full-width card computes to
+   several thousand pixels of card for one thin line. Clamping the height leaves the default
+   preserveAspectRatio to letterbox the trace inside the shorter box, so the shape stays honest and
+   only the empty space is lost. 320px matches .workout-route-map below, so switching the basemap
+   on and off does not resize the card. The layout check cannot see this: it never opens this
+   page's tabs, and apps/web/test/route-svg-height.test.ts is the guard instead. */
+.workout-route-svg { display: block; width: 100%; height: auto; max-height: 320px; }
+.workout-route-trace { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.workout-route-point { fill: var(--accent); }
+
+/* The basemap MapLibre draws into when the route-basemap setting (About.tsx) is on, in place of
+   the svg trace above. A fixed height rather than `height: auto`: there is no viewBox to size this
+   one from, and MapLibre itself needs the element to already have real pixel dimensions before it
+   reads them to size its own canvas. position: relative is MapLibre's own requirement - its
+   attribution and zoom controls are absolutely positioned children of this box. */
+.workout-route-map { width: 100%; height: 320px; position: relative; border-radius: var(--radius-md); overflow: hidden; }
 
 /* WorkoutComparison.tsx's own sentence list, one per compared facet - a plain list, not a table,
    since each row is a full sentence rather than a value under a column header. */

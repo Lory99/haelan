@@ -58,7 +58,17 @@ const releasePleaseJob = (() => {
 
 const releaseConfig = JSON.parse(
   readFileSync(new URL('../../release-please-config.json', import.meta.url), 'utf8'),
-) as { packages: Record<string, { draft?: boolean; 'force-tag-creation'?: boolean }> }
+) as {
+  'separate-pull-requests'?: boolean
+  'pull-request-title-pattern'?: string
+  packages: Record<string, {
+  draft?: boolean
+  'force-tag-creation'?: boolean
+  'skip-github-release'?: boolean
+  component?: string
+  'include-component-in-tag'?: boolean
+  'exclude-paths'?: string[]
+}> }
 
 describe('the release workflow', () => {
   it('parses out the publish job it is asserting against', () => {
@@ -279,6 +289,80 @@ describe('the release workflow', () => {
     // the pull request `autorelease: pending` and every later run tries to release it again.
     // 1.15.0 was released and then left pending exactly that way.
     expect(yaml).toContain('issues: write')
+  })
+
+  it('keeps a version in every release pull request title', () => {
+    // release-please reads the version back OUT of the title it wrote, to match a merged release
+    // pull request to the release it should now tag. Adding apps/android as a second package made
+    // it write one combined pull request titled `chore: release master`, with no version in it at
+    // all. It merged, nothing could be parsed from the title, nothing was tagged, and every run
+    // after that aborted with "There are untagged, merged release PRs outstanding". 2.0.2 bumped
+    // the manifest and the package file and then shipped nothing: no tag, no release, and no image,
+    // because release.yml gates verify, image and publish on release-please having released.
+    //
+    // separate-pull-requests is the fix rather than the pattern alone: one pull request per package
+    // means each title carries exactly one version, which is the shape release-please's own default
+    // assumes. The explicit pattern is belt and braces so a later edit cannot drop ${version} again
+    // without this going red.
+    expect(releaseConfig['separate-pull-requests']).toBe(true)
+    expect(releaseConfig['pull-request-title-pattern']).toContain('${version}')
+  })
+
+  it('lets the app version itself, and keeps it out of the server version', () => {
+    // The app releases on its own cadence: a server release several times a day must not tell
+    // every installed phone it has an update and then hand it a byte identical APK. Without
+    // exclude-paths the root package claims every commit in the repository, so a change to the
+    // app alone would cut a server release too.
+    const root = releaseConfig.packages['.']
+    expect(root['exclude-paths']).toContain('apps/android')
+
+    const app = releaseConfig.packages['apps/android']
+    expect(app, 'apps/android is not a release-please package').toBeDefined()
+    // component plus include-component-in-tag is what produces `android-v0.2.2`, which is the
+    // pattern android-release.yml triggers on and the only thing that ships an APK.
+    expect(app.component).toBe('android')
+    expect(app['include-component-in-tag']).toBe(true)
+  })
+
+  it('creates the app tag that release-please does not, with a token that can trigger', () => {
+    // The gap this closes cost two orphaned versions. skip-github-release stops release-please
+    // creating the app's release, so android-release.yml can own the `Android <version>` title
+    // Obtainium filters on. force-tag-creation was assumed to still leave a tag behind; it does
+    // not, because it forces the tag alongside a release it is creating. Skipping the release
+    // skips the tag, so 0.2.2 bumped the manifest and shipped nothing at all.
+    //
+    // android-tag.yml creates that tag when apps/android/package.json moves, which is what a
+    // merged release pull request does and what nothing else does. It must use the PAT: a push
+    // made with GITHUB_TOKEN does not trigger another workflow, so the tag would appear and no
+    // APK would ever be built, which is the same silent nothing wearing a different hat.
+    const tagWorkflow = readFileSync(new URL('../../.github/workflows/android-tag.yml', import.meta.url), 'utf8')
+    expect(tagWorkflow).toContain("paths: ['apps/android/package.json']")
+    expect(tagWorkflow).toContain('secrets.RELEASE_PLEASE_TOKEN')
+    // No `|| secrets.GITHUB_TOKEN` fallback anywhere in it: falling back would push a tag that
+    // triggers nothing, which is worse than failing, because it looks like it worked.
+    expect(tagWorkflow).not.toContain('GITHUB_TOKEN }}')
+    // Annotated, because android-release.yml reads its notes from the annotation.
+    expect(tagWorkflow).toContain('git tag -a')
+  })
+
+  it('has release-please tag the app but not release it', () => {
+    // These two are a pair, for a different reason than the root's draft pair above.
+    //
+    // android-release.yml creates the app's release itself, titled `Android <version>`, because
+    // Obtainium filters on the release TITLE rather than the tag and that title is the only thing
+    // keeping it from offering a server release as an app update. It also attaches the APK.
+    //
+    // So release-please must not create that release: two creators racing for one tag means
+    // whichever loses fails the job, and a release-please named one would not match `^Android`
+    // anyway. skip-github-release stops it.
+    //
+    // force-tag-creation is what makes the tag still appear. release-please normally creates a
+    // tag as part of creating a release; this option makes it create the ref explicitly and
+    // separately, which is the same mechanism the root package relies on and is what leaves a
+    // tag for android-release.yml to trigger on.
+    const app = releaseConfig.packages['apps/android']
+    expect(app['skip-github-release']).toBe(true)
+    expect(app['force-tag-creation']).toBe(true)
   })
 
   it('names the release by id rather than by tag when publishing it', () => {

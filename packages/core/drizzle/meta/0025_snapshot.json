@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "ae643a90-c89f-48da-96da-7b128121d136",
+  "id": "a9239b03-b257-4448-a250-c2e2c62c4438",
   "prevId": "5e8f7f99-9d98-47f8-9569-d9cd9b34a709",
   "tables": {
     "accounts": {
@@ -1365,22 +1365,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "sleep_target_minutes": {
-          "name": "sleep_target_minutes",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 480
-        },
-        "sleep_use_baseline": {
-          "name": "sleep_use_baseline",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": true
-        },
         "built_mapping_version": {
           "name": "built_mapping_version",
           "type": "integer",
@@ -1853,6 +1837,102 @@
             "ref"
           ],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "session_routes": {
+      "name": "session_routes",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ordinal": {
+          "name": "ordinal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "at_ms": {
+          "name": "at_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "altitude_metres": {
+          "name": "altitude_metres",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "horizontal_accuracy_metres": {
+          "name": "horizontal_accuracy_metres",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "vertical_accuracy_metres": {
+          "name": "vertical_accuracy_metres",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "session_routes_natural": {
+          "name": "session_routes_natural",
+          "columns": [
+            "session_id",
+            "ordinal"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "session_routes_session_id_sessions_id_fk": {
+          "name": "session_routes_session_id_sessions_id_fk",
+          "tableFrom": "session_routes",
+          "tableTo": "sessions",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

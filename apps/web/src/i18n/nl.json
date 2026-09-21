@@ -455,6 +455,8 @@
       "when": "{{date}}, {{start}}–{{end}} · {{source}}",
       "annotate": "Uitsluiten of een notitie toevoegen",
       "gps": "Er is een GPS-route opgenomen voor deze training. Deze API geeft geen routepunten terug, dus er is geen kaart.",
+      "gpsDrawn": "Er is een GPS-route opgenomen voor deze training, hieronder getekend.",
+      "gpsConsentRequired": "Er is een GPS-route opgenomen voor deze training. Health Connect geeft een route pas vrij na een aparte bevestiging voor die ene training, en de synchronisatie op de telefoon kan daar zelf niet om vragen, dus er is geen kaart.",
       "missingTitle": "Geen training gevonden",
       "missingDetail": "Deze link verwijst naar een training die niet in je gegevens staat.",
       "tiles": {
@@ -495,6 +497,11 @@
         "label": "Hartslag tijdens deze training",
         "events": "Pauzes",
         "basisFellBack": "{{pinned}} registreerde geen hartslag in dit venster, dus dit is in plaats daarvan elk ander apparaat; {{detail}}"
+      },
+      "route": {
+        "label": "Route",
+        "basis": "elk punt dat de telefoon opnam, {{count}} in totaal",
+        "description": "De route getekend als lijn"
       },
       "splits": {
         "autoLabel": "Automatische tussentijden",
@@ -612,7 +619,8 @@
     },
     "intradayBasis": {
       "thinned": "{{from}} metingen teruggebracht tot {{to}} punten",
-      "full": "deze {{count}} punten zijn de metingen"
+      "full_one": "dit {{count}} punt is de meting",
+      "full_other": "deze {{count}} punten zijn de metingen"
     },
     "hypnogram": {
       "awakeNote": "Wakker telt alleen de wakkere fasen die hierboven getekend zijn. De wakkere minuten van de nacht tellen daarnaast onrustige tijd en de gaten tussen de losse delen van de nacht mee, dus dat getal ligt hoger."
@@ -1154,6 +1162,10 @@
         "available": "Versie {{version}} is uit. Het wijzigingslogboek hieronder vertelt wat er veranderd is.",
         "toggle": "Controleer GitHub op nieuwe releases",
         "sends": "Als dit aanstaat, vraagt deze instantie elke zes uur bij GitHub naar de nieuwste release. GitHub ziet een verzoek vanaf het adres van deze instantie; er wordt niets over het huishouden, de gegevens of de versie meegestuurd."
+      },
+      "routeBasemap": {
+        "toggle": "Toon een kaartondergrond onder de route van een training",
+        "sends": "Als dit aanstaat, haalt deze instantie kaarttegels op bij een externe kaartaanbieder om een kaartondergrond onder elke trainingsroute te tekenen. Die aanbieder ziet de coördinaten van elke getekende route, inclusief waar elke route begint en eindigt, meestal thuis."
       },
       "documentation": "Documentatie",
       "changelog": "Wijzigingslogboek",
