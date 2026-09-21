@@ -146,7 +146,7 @@ describe('the profile section', () => {
     mountSection()
     expect(container!.innerHTML).not.toMatch(/\bsettings\.[a-zA-Z][a-zA-Z.]*\b/)
     expect([...container!.querySelectorAll('.field .label')].map((n) => n.textContent))
-      .toEqual(['Name', 'Username', 'Time zone', 'Birthday', 'Sex', 'Sleep target', 'Follow my usual', 'Current password', 'New password'])
+      .toEqual(['Name', 'Username', 'Time zone', 'Birthday', 'Sex', 'Sleep target', 'Follow my baseline', 'Current password', 'New password'])
   })
 
   // The sentence that justifies asking for either field in the first place - not decoration, the

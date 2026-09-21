@@ -653,7 +653,7 @@
     "balance": {
       "label": "Slaapbalans",
       "basisTarget": "{{reported}} van {{total}} nachten tegen je doel van {{target}}",
-      "basisBaseline": "{{reported}} van {{total}} nachten tegen je eigen gebruikelijke",
+      "basisBaseline": "{{reported}} van {{total}} nachten tegen je gebruikelijke {{target}}",
       "chartLabel": "Slaapbalans per nacht in {{period}}",
       "columnUnit": "Minuten over of onder"
     },
@@ -1040,11 +1040,11 @@
       "sexFemale": "Vrouw",
       "cardioLoadHelp": "Alleen gebruikt om je cardiobelasting te berekenen. Niets anders leest ze, en je kunt ze altijd wissen.",
       "sleepTarget": "Slaapdoel",
-      "sleepTargetHint": "Het aantal minuten per nacht waartegen de slaapbalanskaart een nacht afzet. In minuten. Als de schakelaar hieronder aan staat, neemt je eigen gebruikelijke het over zodra je genoeg geschiedenis hebt.",
+      "sleepTargetHint": "Het aantal minuten per nacht waartegen de slaapbalanskaart een nacht afzet. In minuten. Als de schakelaar hieronder is ingeschakeld, neemt je gemiddelde over zestig dagen het over zodra je genoeg geschiedenis hebt.",
       "sleepTargetReadback": "Dat is {{duration}}.",
       "sleepTargetUnreadable": "Vul een heel aantal minuten in.",
-      "sleepUseBaseline": "Volg mijn gebruikelijke",
-      "sleepUseBaselineHint": "Wanneer aan, zet de kaart af tegen je eigen gebruikelijke zodra je genoeg geschiedenis hebt. Wanneer uit, gebruikt hij altijd het doel hierboven, ook dan.",
+      "sleepUseBaseline": "Volg mijn baseline",
+      "sleepUseBaselineHint": "Wanneer ingeschakeld, wordt elke nacht afgezet tegen je gemiddelde slaap over de afgelopen zestig dagen. Totdat je genoeg geschiedenis hebt voor een gemiddelde, wordt het doel hierboven gebruikt. Wanneer uitgeschakeld, wordt altijd het doel hierboven gebruikt.",
       "save": "Opslaan",
       "saving": "Opslaan…",
       "saved": "Opgeslagen.",

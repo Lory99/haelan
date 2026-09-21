@@ -653,7 +653,7 @@
     "balance": {
       "label": "Sleep Balance",
       "basisTarget": "{{reported}} of {{total}} nights against your {{target}} target",
-      "basisBaseline": "{{reported}} of {{total}} nights against your own usual",
+      "basisBaseline": "{{reported}} of {{total}} nights against your usual {{target}}",
       "chartLabel": "Nightly sleep balance through {{period}}",
       "columnUnit": "Minutes over or under"
     },
@@ -1040,11 +1040,11 @@
       "sexFemale": "Female",
       "cardioLoadHelp": "Used only to compute your cardio load. Nothing else reads them, and you can clear them at any time.",
       "sleepTarget": "Sleep target",
-      "sleepTargetHint": "The nightly figure the sleep balance card measures a night against. In minutes. While the switch below is on, your own usual takes over once you have enough history.",
+      "sleepTargetHint": "The nightly figure the sleep balance card measures a night against. In minutes. While the switch below is enabled, your sixty-day average takes over once you have enough history.",
       "sleepTargetReadback": "Reads as {{duration}}.",
       "sleepTargetUnreadable": "Enter a whole number of minutes.",
-      "sleepUseBaseline": "Follow my usual",
-      "sleepUseBaselineHint": "When on, the card measures against your own usual once you have enough history. When off, it always uses the target above, even then.",
+      "sleepUseBaseline": "Follow my baseline",
+      "sleepUseBaselineHint": "When enabled, each night is measured against your average sleep over the previous sixty days. Until you have enough history for an average, the target above is used. When disabled, the target above is always used.",
       "save": "Save",
       "saving": "Saving…",
       "saved": "Saved.",
