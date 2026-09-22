@@ -30,7 +30,7 @@ export const DEFAULT_SLEEP_TARGET_MINUTES = 480
 /**
  * What the sleep target is allowed to be: an hour to eighteen hours, in minutes.
  *
- * Sixteen hours is above every recorded night on earth and an hour below every sleep need that has
+ * Eighteen hours is above every recorded night on earth and an hour below every sleep need that has
  * been measured, so a value outside this range is a typo or a unit mistake (an 8 typed where minutes
  * were asked for). Read by PeopleStore, which is where the refusal happens, and by the Settings
  * number input, so the form cannot offer a value the store would refuse.

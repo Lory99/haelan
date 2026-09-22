@@ -178,7 +178,11 @@ export function Profile() {
             above carry none: nothing derived reads this, so nothing goes stale when it moves. */}
         <label className="field">
           <span className="label">{t('settings.profile.sleepTarget')}</span>
-          <input className="input" type="number" inputMode="numeric" step={15}
+          {/* step 1, not 15: with min 60 the browser takes the step base from min, so step 15
+              refused anything but 60 + 15n and a reader typing 470 got a native bubble about the
+              two nearest valid values, while the route and setSleepTargetMinutes would both have
+              stored 470. The store accepts any whole minute, so the form does too. */}
+          <input className="input" type="number" inputMode="numeric" step={1}
             min={SLEEP_TARGET_MINUTES_RANGE.min} max={SLEEP_TARGET_MINUTES_RANGE.max}
             value={value.sleepTargetMinutes ?? ''}
             onChange={(e) => edit({

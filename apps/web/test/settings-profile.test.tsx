@@ -399,7 +399,9 @@ describe('the sleep target control', () => {
     const input = fields()[FIELDS.sleepTarget]!
     expect(input.min).toBe('60')
     expect(input.max).toBe('1080')
-    expect(input.step).toBe('15')
+    // Step 1, not 15: with min 60 a step of 15 refuses anything but 60 + 15n (so 470 gets a
+    // native bubble) while the store would have accepted it.
+    expect(input.step).toBe('1')
   })
 
   it('saves an edited target with the rest of the profile', async () => {

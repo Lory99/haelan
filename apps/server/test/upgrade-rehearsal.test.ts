@@ -214,15 +214,17 @@ function restoreOver(dir: string, backupPath: string): void {
 }
 
 /**
- * Every column the migrations after `LAST_OLD_TAG` add WITH a declared default, mapped to the
- * literal that default was written as. Scanned out of the migration SQL rather than read off the
- * schema module, because this file's own subject is what the migrations did to an old database: a
- * default the schema declares and the migration does not write is exactly the drift the backfill
- * check below has to see.
+ * Every column the migrations after `LAST_OLD_TAG` add WITH a declared default, keyed by
+ * `table.column` to the literal that default was written as. Scanned out of the migration SQL
+ * rather than read off the schema module, because this file's own subject is what the migrations
+ * did to an old database: a default the schema declares and the migration does not write is
+ * exactly the drift the backfill check below has to see.
  *
- * Only an ADD COLUMN's own tail counts. A default anywhere else in a statement would belong to a
- * column being created in a table this walk does not carry rows across, and reading one out of a
- * multi-line CREATE TABLE would attribute it to whichever ADD COLUMN happened to come next.
+ * Only an ADD COLUMN's own tail counts, keyed by its own table. A default anywhere else in a
+ * statement would belong to a column being created in a table this walk does not carry rows
+ * across, and reading one out of a multi-line CREATE TABLE would attribute it to whichever ADD
+ * COLUMN happened to come next. Keying table-blind would do the same across tables: two tables
+ * gaining the same column name would compare the wrong pair.
  *
  * The journal is read here as well as at the top of the test, which is deliberate: the two reads
  * answer different questions (this one, which columns arrived with a default; that one, where the
@@ -237,8 +239,8 @@ function addedColumnDefaults(): Map<string, string> {
   const defaults = new Map<string, string>()
   for (const entry of journal.entries.slice(cut + 1)) {
     const sql = readFileSync(join(MIGRATIONS_DIR, `${entry.tag}.sql`), 'utf8')
-    for (const match of sql.matchAll(/ADD\s+`(\w+)`[^;]*?\bDEFAULT\s+('?[\w.]+'?)/gi)) {
-      defaults.set(match[1]!, match[2]!.replace(/^'|'$/g, ''))
+    for (const match of sql.matchAll(/ALTER\s+TABLE\s+`(\w+)`\s+ADD\s+`(\w+)`[^;]*?\bDEFAULT\s+('?[\w.]+'?)/gi)) {
+      defaults.set(`${match[1]}.${match[2]}`, match[3]!.replace(/^'|'$/g, ''))
     }
   }
   return defaults
@@ -438,12 +440,12 @@ describe('the upgrade path', () => {
         const backfilled = addedRows.flatMap((row, rowIndex) => addedCols
           .filter((c) => {
             if (row[c] === null) return false
-            const want = declared.get(c)
+            const want = declared.get(`${t}.${c}`)
             const read = String(row[c])
             if (read === want) return false
             return !((want === 'true' && read === '1') || (want === 'false' && read === '0'))
           })
-          .map((c) => ({ row: rowIndex, column: c, value: row[c], declared: declared.get(c) ?? null })))
+          .map((c) => ({ row: rowIndex, column: c, value: row[c], declared: declared.get(`${t}.${c}`) ?? null })))
         expect(
           backfilled,
           `${t}: migration since ${LAST_OLD_TAG} added ${addedCols.join(', ')} and wrote a value into `
@@ -465,11 +467,30 @@ describe('the upgrade path', () => {
       // third copy of the same number. Through core's own export rather than by importing drizzle
       // for the column metadata: apps/server reaches core through the root export and does not
       // depend on drizzle itself, and a test is not a good enough reason to change that.
-      const schemaDefaults = declaredColumnDefaults(schema.people)
-      for (const [column, literal] of addedColumnDefaults()) {
-        if (!schemaDefaults.has(column)) continue
-        expect(literal, `schema and the migration that added ${column} disagree on its default`)
-          .toBe(schemaDefaults.get(column))
+      //
+      // Over every table in TIER_1 and keyed by table.column, not people alone and not column
+      // alone: addedColumnDefaults collects from every table, so looking only at people silently
+      // skipped the next defaulted column added to sources, notes, events or overrides, which is
+      // the drift this block exists to catch, and a table-blind key would compare the wrong pair
+      // the moment two tables gained the same column name.
+      const tablesByName = {
+        people: schema.people,
+        sources: schema.sources,
+        raw_payloads: schema.rawPayloads,
+        overrides: schema.overrides,
+        notes: schema.notes,
+        events: schema.events,
+      } as const
+      const schemaDefaults = new Map<string, string>()
+      for (const tableName of TIER_1) {
+        for (const [column, literal] of declaredColumnDefaults(tablesByName[tableName])) {
+          schemaDefaults.set(`${tableName}.${column}`, literal)
+        }
+      }
+      for (const [key, literal] of addedColumnDefaults()) {
+        if (!schemaDefaults.has(key)) continue
+        expect(literal, `schema and the migration that added ${key} disagree on its default`)
+          .toBe(schemaDefaults.get(key))
       }
       // The deliberate part. 0016 drops `samples` rather than translating 1.6 million rows inside
       // a migration transaction, and the rebuild below is what refills it.

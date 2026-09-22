@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
+import { SLEEP_TARGET_MINUTES_RANGE } from '@haelan/core'
 import { errorBody, sendCoreError, statusFor } from '../api/envelope.ts'
 import { isKnownTimezone } from './setup.ts'
 
@@ -69,14 +70,23 @@ export function registerProfile(app: FastifyInstance): void {
       // Its own branch rather than a fourth entry in either loop above, because it is a number and
       // not a string, and because it is neither clearable nor nullable: the column is NOT NULL with
       // a default, so `null` here is a client mistake like a null name rather than an instruction
-      // to clear. The range itself is the store's own (PeopleStore.setSleepTargetMinutes), so a
-      // route and a direct caller refuse the same values; this branch only answers the two things
-      // the store cannot see, which is that a JSON body may carry a string or a float where a
-      // number was meant, and that the refusal has to be a 4xx envelope rather than a throw.
+      // to clear. The type check answers what the store cannot see (a JSON body carrying a string
+      // or a float where a number was meant, refused as a 4xx envelope rather than a throw), and
+      // the range check below answers it before anything is written: setSleepTargetMinutes throws
+      // ConfigError, which this scope turns into the same 4xx, but only after displayName,
+      // username, birthDate and sex have already landed, so { displayName: 'Bart',
+      // sleepTargetMinutes: 30 } would rename and then error. Checked here against the store's
+      // own range, so a route and a direct caller still refuse the same values.
       if (sleepTargetMinutes !== undefined) {
         if (typeof sleepTargetMinutes !== 'number' || !Number.isInteger(sleepTargetMinutes)) {
           return reply.code(statusFor('config'))
             .send(errorBody('config', 'config', 'sleepTargetMinutes must be whole minutes'))
+        }
+        if (sleepTargetMinutes < SLEEP_TARGET_MINUTES_RANGE.min
+          || sleepTargetMinutes > SLEEP_TARGET_MINUTES_RANGE.max) {
+          return reply.code(statusFor('config'))
+            .send(errorBody('config', 'config',
+              `a sleep target must be between ${SLEEP_TARGET_MINUTES_RANGE.min} and ${SLEEP_TARGET_MINUTES_RANGE.max} minutes, got ${sleepTargetMinutes}`))
         }
       }
       // Its own branch for the same reason the number above has one: it is neither text nor

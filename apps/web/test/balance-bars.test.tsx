@@ -132,8 +132,8 @@ describe('BalanceBars', () => {
   // of two colours and no statement of what they are measured from.
   it('draws the zero line as its own dashed mark at zero', () => {
     const marks = mount().series[0]!.markLine!.data as { name?: string, yAxis?: number }[]
-    expect(marks[0]!.name).toBe('zero')
-    expect(marks[0]!.yAxis).toBe(0)
+    expect(marks.at(-1)!.name).toBe('zero')
+    expect(marks.at(-1)!.yAxis).toBe(0)
   })
 
   it('draws one bar per day, in the order the labels give, with null still in place', () => {
@@ -193,7 +193,7 @@ describe('BalanceBars', () => {
   it('names an excluded night in the table and marks it on the canvas', () => {
     const option = mount({ excluded: ['2026-08-11'] })
     expect(tableRowFor('2026-08-11')![1]).toBe('excluded')
-    // The zero line, then the excluded day's own mark.
+    // The excluded day's own mark, then the zero line last.
     expect(option.series[0]!.markLine!.data).toHaveLength(2)
   })
 
@@ -217,12 +217,25 @@ describe('BalanceBars', () => {
   })
 
   // A click on the zero line has no day behind it, and must not be reported as one: the zero line
-  // rides in the same markLine array as the annotations and therefore counts into its dataIndex.
+  // rides in the same markLine array as the annotations and therefore counts into its dataIndex,
+  // which is why it sits last there, past the end of marks.atDate, so markClickDate's optional
+  // lookup resolves it to undefined. With no annotations atDate is empty and any order passes,
+  // so this mounts with a mark present: dataIndex 0 is then the mark itself and only the last
+  // index is the zero line.
   it('reports nothing for a click on the zero line', () => {
     const onPointClick = vi.fn()
-    mount({ onPointClick })
-    clickHandlerOf(chartStubs.at(-1)!)({ componentType: 'markLine', dataIndex: 0 })
+    mount({ onPointClick, annotations: [{ date: '2026-08-13', text: 'travelling' }] })
+    // One annotation mark plus the zero line last.
+    clickHandlerOf(chartStubs.at(-1)!)({ componentType: 'markLine', dataIndex: 1 })
     expect(onPointClick).not.toHaveBeenCalled()
+  })
+
+  it('resolves an annotation mark to its own date rather than its neighbour', () => {
+    const onPointClick = vi.fn()
+    mount({ onPointClick, annotations: [{ date: '2026-08-13', text: 'travelling' }] })
+    clickHandlerOf(chartStubs.at(-1)!)({ componentType: 'markLine', dataIndex: 0 })
+    expect(onPointClick).toHaveBeenCalledTimes(1)
+    expect(onPointClick).toHaveBeenCalledWith('2026-08-13')
   })
 
   // The defect chart-annotate-handlers.test.tsx exists for, asserted here too because this is the

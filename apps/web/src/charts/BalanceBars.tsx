@@ -181,6 +181,11 @@ export function BalanceBars({
           lineStyle: { color: tokens.axis, type: 'dashed' as const },
           label: { show: false },
           data: [
+            // An excluded day, drawn by position across the plot with no value left to sit on. Its
+            // own solid styling overrides the dashed default so a gap the reader made reads apart
+            // from a day that merely carries a note, in shape as well as in colour.
+            ...marks.atDate.map((mark) => ({ name: mark.text, xAxis: mark.index,
+              ...(mark.excluded && { lineStyle: { color: tokens.excluded, type: 'solid' as const } }) })),
             // The zero line itself, in the axis colour: it is structure rather than a mark to read
             // a value off, exactly as the gridlines are. Drawn as a markLine rather than as one
             // more yAxis tick because it has to sit at the comparison point, and echarts places
@@ -188,16 +193,12 @@ export function BalanceBars({
             //
             // It rides in the same array as the annotations and therefore counts into the
             // markLine's own dataIndex, which is why `markClickDate` (base.ts) bottoms out in an
-            // optional lookup: a click on this entry resolves to no date rather than to the first
-            // annotation, and dayPointDate discards it. Splitting the two into separate markLine
-            // objects would keep two sets of indices, which is the drift base.ts's own DayMarks
-            // doc comment exists to make impossible.
+            // optional lookup: last in this array, its index sits past the end of marks.atDate,
+            // so a click on this entry resolves to no date rather than to the first annotation,
+            // and dayPointDate discards it. Splitting the two into separate markLine objects
+            // would keep two sets of indices, which is the drift base.ts's own DayMarks doc
+            // comment exists to make impossible.
             { name: ZERO_LINE_NAME, yAxis: 0, lineStyle: { color: tokens.axis, type: 'dashed' as const } },
-            // An excluded day, drawn by position across the plot with no value left to sit on. Its
-            // own solid styling overrides the dashed default so a gap the reader made reads apart
-            // from a day that merely carries a note, in shape as well as in colour.
-            ...marks.atDate.map((mark) => ({ name: mark.text, xAxis: mark.index,
-              ...(mark.excluded && { lineStyle: { color: tokens.excluded, type: 'solid' as const } }) })),
           ],
         },
       }],

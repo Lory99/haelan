@@ -393,8 +393,12 @@ export function Sleep() {
   // for that rather than a second threshold invented here: Sleep.tsx's own bandFrom withholds a
   // band on exactly this flag for exactly this reason, and the crossover is 42 recorded nights in
   // the trailing 60 day window (baseline.ts's `n < 14 || n / 60 < 0.7`, and a window that ends the
-  // day before the anchor, so the range being scored is never part of the baseline it is scored
-  // against).
+  // day before the anchor, so the anchor day itself is never part of the baseline it is scored
+  // against, but a multi-day range does overlap it: on a week anchored at 2026-08-16 the window
+  // covers 2026-06-18 to 08-15 and six of the seven nights being scored contributed to it. A short
+  // night therefore pulls the line down and shrinks its own reported deficit by that share, which
+  // is accepted here to keep the anchor on historicalTo like every other baseline in the app
+  // rather than on the range start, where a Year view would measure against a year-old usual).
   //
   // Unless the reader switched the baseline off in Settings, in which case the stored target is
   // the zero line always, even behind a solid baseline, for whoever wants to hold a seven or
@@ -434,9 +438,11 @@ export function Sleep() {
 
   // Sum, not mean: the card's own subject is the surplus or deficit over the period, and the basis
   // line already states the night count it was taken over, so dividing by it here would answer a
-  // question nobody asked twice. A year's 365 nights against one zero line makes this a large
-  // number by construction, which is the one design question left open; it reads as a year's
-  // running surplus, which is what it is.
+  // question nobody asked twice. A year's 365 nights against the mean of the trailing 60 days
+  // makes this a large number by construction, which is the deliberate choice rather than an
+  // accident: it reads as a year's running surplus against that recent usual, and the basis line
+  // names the window it was taken over so a Year tab does not make the same claim as a Week tab
+  // without saying so.
   const balanceTotal = balance.values.reduce((total: number, value) => (value === null ? total : total + value), 0)
 
   // The points MetricCard counts its own basis line from: the metric's own rows, narrowed to the
@@ -568,7 +574,7 @@ export function Sleep() {
           query={metricGroups.queryFor('sleep_asleep_minutes')} points={balancePoints}
           basisKey={balanceZeroLine.source === 'baseline' ? 'sleep.balance.basisBaseline' : 'sleep.balance.basisTarget'}
           basisWornKey={balanceZeroLine.source === 'baseline' ? 'sleep.balance.basisBaseline' : 'sleep.balance.basisTarget'}
-          basisValues={{ total: rangeDates.length, target: formatDuration(balanceZeroLine.minutes) }}
+          basisValues={{ total: rangeDates.length, target: formatDuration(balanceZeroLine.minutes), on: controls.historicalTo }}
           oneDayRange={controls.tab === 'day'}>
           {(basis, oneDayRange) => (
             <StatTile label={t('sleep.balance.label')} value={formatSignedDuration(balanceTotal, '')} basis={basis}>

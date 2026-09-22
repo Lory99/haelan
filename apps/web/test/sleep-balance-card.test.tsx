@@ -350,7 +350,8 @@ describe('the sleep balance card', () => {
     restore()
 
     expect(balanceCard()!.querySelector('.label')!.textContent).toBe('Sleep Balance')
-    expect(balanceCard()!.querySelector('.basis')!.textContent).toBe('6 of 7 nights against your usual 9h 00m')
+    expect(balanceCard()!.querySelector('.basis')!.textContent)
+      .toBe('6 of 7 nights against your usual 9h 00m, 60 days before 2026-08-16')
     // The same bars against a centre 60 minutes higher: -120, -60, 0, absent, -150, -90, -75 sums
     // to -495. A card that named the baseline but kept measuring against the target would read
     // -2h 15m, which is the whole claim of this test and the half a label assertion cannot make.
