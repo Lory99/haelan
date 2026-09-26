@@ -440,17 +440,33 @@ export function Activity() {
           )}
         </Card>
 
-        {/* Row 2: the intensity bands take most of the row, the zone minutes card the rest.
-            Both count active minutes, split two ways (intensity against zone score), so they read
-            as one row rather than two full-width sections. */}
+        {/* Row 2: distance opens the row at a third, the intensity bands take the rest. */}
+        {card('distance', 4, 'activity.distance.label', 'activity.distance.basis', 'activity.distance.basisWorn',
+          'activity.distance.chartLabel', 'activity.units.distance', 'activity.units.km', 'higher-is-better',
+          // distance is stored in millimeters (METRICS.distance, precision 0); this card displays
+          // the period's total as kilometers with one decimal, a precision the catalogue's own
+          // field describes a different unit than, so it cannot answer this card's question (the
+          // audit's own finding #9). Converted here and handed to formatNumber directly with its
+          // own precision, never to formatMetricValue, which would apply millimeters' precision 0
+          // to a kilometers value and print "5" instead of "5.2" (see formatNumber's own comment
+          // in format.ts for why formatMetricValue has no parameter that could do this by accident).
+          (total) => formatNumber(total / 1_000_000, 1, i18n.language, ''),
+          // The Sparkline's own accessible table cell, same conversion applied per day rather than
+          // to the period total: without this, the table sat behind formatMetricValue's default
+          // (metric 'distance', catalogue precision 0, millimeters) and printed the raw per-day
+          // millimeter reading ("5,234,567") under a column header reading "Distance in
+          // kilometers" -- correct for precision, wrong for unit, and exactly what an M3e review
+          // caught. `v === null` first: a day with no reading stays a day with no reading, not
+          // `null / 1_000_000` becoming 0 and reading as a real zero-kilometer day.
+          (v, absent) => formatNumber(v === null ? null : v / 1_000_000, 1, i18n.language, absent))}
         <Card span={8} label={t('activity.activityBands.label')} basis={bandsBasis}>
           <StackedDailyBars series={bands} labels={rangeDates} metric="active_minutes_light"
             label={t('activity.activityBands.chartLabel', { period })}
             unit={t('activity.units.minutes')} axisUnit={t('activity.units.min')} />
         </Card>
 
-        {/* One card for the three zones, where there used to be three cards.
-            They are labelled AZM rather than minutes, unlike the activity levels beside them,
+        {/* Row 3 opens with the three zones in one card, where there used to be three cards.
+            They are labelled AZM rather than minutes, unlike the activity levels in the row above,
             because the number is a score: a cardio or peak minute is worth two. Measured in
             probe/findings/activity-minute-overlap.md; see the note in metrics.ts.
 
@@ -510,30 +526,11 @@ export function Activity() {
           )
         })()}
 
-        {card('distance', 4, 'activity.distance.label', 'activity.distance.basis', 'activity.distance.basisWorn',
-          'activity.distance.chartLabel', 'activity.units.distance', 'activity.units.km', 'higher-is-better',
-          // distance is stored in millimeters (METRICS.distance, precision 0); this card displays
-          // the period's total as kilometers with one decimal, a precision the catalogue's own
-          // field describes a different unit than, so it cannot answer this card's question (the
-          // audit's own finding #9). Converted here and handed to formatNumber directly with its
-          // own precision, never to formatMetricValue, which would apply millimeters' precision 0
-          // to a kilometers value and print "5" instead of "5.2" (see formatNumber's own comment
-          // in format.ts for why formatMetricValue has no parameter that could do this by accident).
-          (total) => formatNumber(total / 1_000_000, 1, i18n.language, ''),
-          // The Sparkline's own accessible table cell, same conversion applied per day rather than
-          // to the period total: without this, the table sat behind formatMetricValue's default
-          // (metric 'distance', catalogue precision 0, millimeters) and printed the raw per-day
-          // millimeter reading ("5,234,567") under a column header reading "Distance in
-          // kilometers" -- correct for precision, wrong for unit, and exactly what an M3e review
-          // caught. `v === null` first: a day with no reading stays a day with no reading, not
-          // `null / 1_000_000` becoming 0 and reading as a real zero-kilometer day.
-          (v, absent) => formatNumber(v === null ? null : v / 1_000_000, 1, i18n.language, absent))}
-
         {card('workout_minutes', 4, 'activity.workoutMinutes.label', 'activity.workoutMinutes.basis', 'activity.workoutMinutes.basis',
           'activity.workoutMinutes.chartLabel', 'activity.units.minutes', 'activity.units.min', 'neutral')}
 
-        {/* Closes the third row with distance and workout minutes: the training load beside the
-            work that produced it, each a third of the row.
+        {/* Closes the third row with the zone minutes and workout minutes: the training load
+            beside the work that produced it, each a third of the row.
 
             `controls.to` rather than the whole range: this card is 7 days against 28 by the
             metric's own definition, so the range picker moves only which day it is asked about,
