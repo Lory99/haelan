@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useId } from 'react'
 import { METRICS } from '@haelan/core/metrics'
 import type { DailyAgg } from '@haelan/core/metrics'
 import type { Polarity } from '../format.js'
 import { useTranslation } from '../i18n/index.js'
 import { Card } from '../components/Card.js'
+import { BasisContext } from '../components/basis.js'
 import { CardGrid } from '../components/CardGrid.js'
 import { StatTile } from '../components/StatTile.js'
 import { MetricCard } from '../components/MetricCard.js'
@@ -213,6 +214,12 @@ export function Activity() {
       default: return t('activity.activityBands.bandPeak')
     }
   }
+
+  // The bands card's basis id, published the way Card publishes its own (basis.ts): the line
+  // doubles as the stacked chart's accessible description, so it keeps the id the chart points
+  // at even though the line itself moved under the figures (StatTile order) instead of sitting in
+  // Card's own basis slot above them.
+  const bandsBasisId = useId()
 
   // Stable array identity, for the reason the sparklines memo just above states: useChart keys its
   // rebuild on `build`, so a freshly constructed array every render disposes and reinitialises the
@@ -459,7 +466,7 @@ export function Activity() {
           // caught. `v === null` first: a day with no reading stays a day with no reading, not
           // `null / 1_000_000` becoming 0 and reading as a real zero-kilometer day.
           (v, absent) => formatNumber(v === null ? null : v / 1_000_000, 1, i18n.language, absent))}
-        <Card span={8} label={t('activity.activityBands.label')} basis={bandsBasis}>
+        <Card span={8} label={t('activity.activityBands.label')}>
           {/* One figure per band over the same partitioned stacks the chart draws (level minus
               its own peak overlap, peak the summed overlaps), so the numbers and the stacks tell
               the same story. Compact figures rather than StatTiles: StatTile prints its label in
@@ -480,9 +487,12 @@ export function Activity() {
               )
             })}
           </div>
-          <StackedDailyBars series={bands} labels={rangeDates} metric="active_minutes_light"
-            label={t('activity.activityBands.chartLabel', { period })}
-            unit={t('activity.units.minutes')} axisUnit={t('activity.units.min')} />
+          <BasisContext.Provider value={bandsBasisId}>
+            <p className="basis" id={bandsBasisId}>{bandsBasis}</p>
+            <StackedDailyBars series={bands} labels={rangeDates} metric="active_minutes_light"
+              label={t('activity.activityBands.chartLabel', { period })}
+              unit={t('activity.units.minutes')} axisUnit={t('activity.units.min')} />
+          </BasisContext.Provider>
         </Card>
 
         {/* Row 3 opens with the three zones in one card, where there used to be three cards.

@@ -605,6 +605,10 @@ describe('the Activity page', () => {
     const names = [...card!.querySelectorAll('.band-tiles .band-tile-name')].map((el) => el.textContent)
     expect(names).toEqual(['Peak'])
     expect(card!.querySelector('.band-tiles .band-tile-value')?.textContent).toBe('180 min')
+    // StatTile order: the "sum, …" basis sits under the figures, not above them.
+    const tilesEl = card!.querySelector('.band-tiles')!
+    const basisEl = card!.querySelector('.basis')!
+    expect(tilesEl.compareDocumentPosition(basisEl)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
     restore()
   })
 
