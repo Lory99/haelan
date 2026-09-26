@@ -23,7 +23,9 @@ const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
  */
 export type HeatmapDay = DayRow & { workouts?: number | null }
 
-function heatValue(day: HeatmapDay | undefined, metric: 'steps' | 'workout_count'): number | null | undefined {
+// Exported for ContributionGrid, the GitHub-style squares grid that reads the same rows through
+// the same field-per-metric rule: one implementation of "which number", two renderings of it.
+export function heatValue(day: HeatmapDay | undefined, metric: 'steps' | 'workout_count'): number | null | undefined {
   if (day === undefined) return undefined
   return metric === 'workout_count' ? (day.workouts ?? null) : day.steps
 }

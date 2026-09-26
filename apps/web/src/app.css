@@ -880,6 +880,47 @@ html:has(dialog.period-sheet[open]), html:has(dialog.status-sheet[open]), html:h
 .cal-sheet .cal-nav { width: 44px; height: 44px; }
 .cal-sheet .cal-today { min-height: 44px; padding: 0 var(--space-2); }
 
+/* ContributionGrid.tsx: the activity grids as GitHub-style squares. Fixed-size cells with real
+   gaps, so a square stays a square at every range: the size comes from --contrib-cell, never from
+   the number of weeks on screen (which is what stretched the old echarts heatmap into
+   rectangles). Both the month row and the grid read the same gutter and the same columns, so the
+   month names above always sit over the week they name. */
+.contrib { --contrib-gutter: 34px; --contrib-cell: 15px; overflow-x: auto; padding-bottom: var(--space-1); }
+.contrib-months, .contrib-grid { display: grid; gap: 4px; width: max-content; }
+.contrib-months { margin-bottom: var(--space-1); }
+.contrib-month { font-size: var(--font-size-micro); color: var(--text-faint); white-space: nowrap; overflow: hidden; }
+.contrib-grid { align-items: center; }
+.contrib-wday { font-size: var(--font-size-micro); color: var(--text-faint); white-space: nowrap; }
+/* appearance/font reset: most squares are buttons (the annotate tap target), and a button without
+   it wears the browser's own chrome. aspect-ratio, not a fixed height, is what keeps every cell a
+   square while the track widths stay fractional. */
+.contrib-day {
+  appearance: none; font: inherit; margin: 0; padding: 0; border: 0; border-radius: 4px;
+  width: var(--contrib-cell); aspect-ratio: 1; box-sizing: border-box;
+  background: var(--chart-grid); color: inherit;
+}
+button.contrib-day { cursor: pointer; }
+button.contrib-day:hover { outline: 2px solid var(--text-faint); outline-offset: 1px; }
+.contrib-day:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+/* The six shades, read off the chart's own scale ramp so the grid follows the theme exactly as
+   the echarts charts do. Level 0 is the empty square: a day with no reading, or a true zero. */
+.contrib-day[data-level="1"] { background: var(--chart-scale-1); }
+.contrib-day[data-level="2"] { background: var(--chart-scale-2); }
+.contrib-day[data-level="3"] { background: var(--chart-scale-3); }
+.contrib-day[data-level="4"] { background: var(--chart-scale-4); }
+.contrib-day[data-level="5"] { background: var(--chart-scale-5); }
+/* An excluded day keeps its square but wears the excluded colour, and an annotated day an inset
+   ring in the annotation colour: the grid's geometry never changes, only the paint. */
+.contrib-day[data-excluded] { background: var(--chart-state-excluded); }
+.contrib-day[data-annotated] { box-shadow: inset 0 0 0 2px var(--chart-stage-awake); }
+/* The legend's swatches are fixed-size by definition (they name shades, not days), while grid
+   squares size from the track: the extra class only pins the size, the shade still comes from
+   data-level above. */
+.contrib-sw { width: 12px; }
+.contrib-legend { display: flex; align-items: center; gap: 4px; margin-top: var(--space-2); font-size: var(--font-size-micro); color: var(--text-muted); }
+.contrib-legend span:first-child { margin-right: 2px; }
+.contrib-legend span:last-child { margin-left: 2px; }
+
 /* The weight sits on the title's own <strong> rather than on the heading: the tokens carry no
    regular weight to put the muted subtitle back to, so the heading is left at the body's weight
    and only the title is raised. */

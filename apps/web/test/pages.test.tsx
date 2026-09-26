@@ -452,8 +452,12 @@ describe.each(Object.entries(pages))('%s', (_name, html) => {
 
   it('gives every chart a table alternative', () => {
     const charts = [...html.matchAll(/role="img"/g)].length
+    // ContributionGrid's squares are real buttons, so the grid is a labelled group rather than a
+    // role="img" host (which would hide its own controls from assistive tech). It carries the same
+    // hidden table as every echarts chart, counted here by its grid class.
+    const grids = [...html.matchAll(/class="contrib-grid"/g)].length
     const tableCount = [...html.matchAll(/<table class="sr-only">/g)].length
-    expect(tableCount).toBe(charts)
+    expect(tableCount).toBe(charts + grids)
   })
 
   it('never renders a null, undefined or NaN into the page', () => {

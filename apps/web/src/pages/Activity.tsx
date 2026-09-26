@@ -17,7 +17,7 @@ import type { AnnotateTarget } from '../components/AnnotatePanel.js'
 import { Sparkline } from '../charts/Sparkline.js'
 import { DailyBars } from '../charts/DailyBars.js'
 import { StackedDailyBars } from '../charts/StackedDailyBars.js'
-import { ActivityHeatmap } from '../charts/ActivityHeatmap.js'
+import { ContributionGrid } from '../charts/ContributionGrid.js'
 import { usePageControls } from '../controls/usePageControls.js'
 import { SessionList } from './activity/SessionList.js'
 import { bandSeries } from './activity/bandSeries.js'
@@ -384,13 +384,18 @@ export function Activity() {
       <h1 style={{ fontSize: 'var(--font-size-lg)', margin: '0 0 var(--space-3)' }}>{t('activity.title')}</h1>
       <ControlRow controls={resolved} sources={sources} exportPath={exportPath} trendNote yearCompare />
       <CardGrid>
-        {/* First row, two halves: steps on the left, workouts on the right. Same ActivityHeatmap
-            component and default map style in both, the workouts card reading workout_count through
-            metric="workout_count" with the same max-based colour domain as steps. */}
+        {/* First row, two halves: steps on the left, workouts on the right. GitHub-style square
+            grids (ContributionGrid) in both, the workouts card reading workout_count through
+            metric="workout_count" with the same max-based colour domain as steps. Each card's
+            headline is the period's own total over the filtered range, so the grid answers "on
+            which days" under a figure that answers "how much". */}
         <Card span={6} label={t('activity.dailySteps.label')} basis={stepsBasis()}>
           {stepsQuery.isError ? <ErrorState onRetry={() => void stepsQuery.refetch()} error={stepsQuery.error} />
             : stepsQuery.isPending ? <Loading /> : (
-            <ActivityHeatmap days={heatmapDays} max={maxSteps} label={t('activity.dailySteps.chartLabel', { period })}
+            <ContributionGrid days={heatmapDays} max={maxSteps}
+              label={t('activity.dailySteps.chartLabel', { period })}
+              totalValue={formatMetricValue(sum(values(stepsPoints)), 'steps', i18n.language, '')}
+              totalUnit={t('activity.units.stepsShort')}
               annotations={stepsAnnotations} excluded={stepsOverrides.excluded}
               onPointClick={(localDate) => setAnnotateTarget({ scope: 'day_metric', localDate, metric: 'steps' })} />
           )}
@@ -399,8 +404,10 @@ export function Activity() {
         <Card span={6} label={t('activity.dailyWorkouts.label')} basis={workoutsBasis()}>
           {workoutsQuery.isError ? <ErrorState onRetry={() => void workoutsQuery.refetch()} error={workoutsQuery.error} />
             : workoutsQuery.isPending ? <Loading /> : (
-            <ActivityHeatmap days={workoutHeatmapDays} max={maxWorkouts} metric="workout_count"
+            <ContributionGrid days={workoutHeatmapDays} max={maxWorkouts} metric="workout_count"
               label={t('activity.dailyWorkouts.chartLabel', { period })}
+              totalValue={formatMetricValue(sum(values(workoutPoints)), 'workout_count', i18n.language, '')}
+              totalUnit={t('activity.units.workoutsShort')}
               annotations={workoutsAnnotations} excluded={workoutsOverrides.excluded}
               onPointClick={(localDate) => setAnnotateTarget({ scope: 'day_metric', localDate, metric: 'workout_count' })} />
           )}
