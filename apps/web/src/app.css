@@ -616,6 +616,15 @@ html:has(dialog.period-sheet[open]), html:has(dialog.status-sheet[open]), html:h
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2) var(--space-3);
 }
+/* Activity's intensity bands card: one figure per band in a single row above the stacks.
+   auto-fit (not a fixed count) because bands totalling zero draw no figure, so the row holds one
+   to four figures and the survivors share it equally rather than leaving dead tracks. The figure
+   is its own markup rather than a StatTile: see Activity.tsx for why `.label` is unavailable
+   here. */
+.band-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
+.band-tile { min-width: 0; }
+.band-tile-name { display: block; font-size: var(--font-size-micro); letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); font-weight: var(--weight-medium); }
+.band-tile-value { font-size: var(--font-size-lg); font-weight: var(--weight-bold); font-variant-numeric: tabular-nums; }
 /* One box per tile. Without it the grid's children are StatTile's own three elements rather than
    its tiles, and auto-fit flows label, value and basis into separate columns. min-width: 0 for the
    same reason .session-list carries it: a grid child defaults to min-content and a long label would

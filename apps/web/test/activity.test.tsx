@@ -590,6 +590,24 @@ describe('the Activity page', () => {
     restore()
   })
 
+  // The bands card's own figures: one per band over the partitioned stacks (level minus its
+  // peak overlap, peak the summed overlaps), so a uniform stub reads Peak 180 and nothing else -
+  // the three levels' 60 minutes each sit entirely inside their own overlap. Zero bands draw no
+  // tile rather than a "0 min" headline, the same zero rule the heatmap totals follow.
+  it('headlines each band total above the intensity stacks, hiding zero bands', async () => {
+    window.history.replaceState(null, '', '/activity?range=month&on=2026-08-15')
+    const restore = stubActivityValues({})
+    const { client, tree } = withQuery(<Activity />)
+    mount(<I18nProvider lng="en">{tree}</I18nProvider>)
+    await flush(client, () => container!.innerHTML)
+    const card = [...container!.querySelectorAll('.card')]
+      .find((c) => c.querySelector('.label')?.textContent === 'Active minutes by intensity')
+    const names = [...card!.querySelectorAll('.band-tiles .band-tile-name')].map((el) => el.textContent)
+    expect(names).toEqual(['Peak'])
+    expect(card!.querySelector('.band-tiles .band-tile-value')?.textContent).toBe('180 min')
+    restore()
+  })
+
   it('asks for the steps insight at agg sum, separately from the sum series request', async () => {
     const urls: string[] = []
     const restore = stubActivity(urls)

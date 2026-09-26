@@ -460,6 +460,26 @@ export function Activity() {
           // `null / 1_000_000` becoming 0 and reading as a real zero-kilometer day.
           (v, absent) => formatNumber(v === null ? null : v / 1_000_000, 1, i18n.language, absent))}
         <Card span={8} label={t('activity.activityBands.label')} basis={bandsBasis}>
+          {/* One figure per band over the same partitioned stacks the chart draws (level minus
+              its own peak overlap, peak the summed overlaps), so the numbers and the stacks tell
+              the same story. Compact figures rather than StatTiles: StatTile prints its label in
+              `.label`, and the peak band's "Peak" would collide with the zone minutes card's own
+              "Peak" tile under pages.test.tsx's unique-labels rule. A band totalling zero draws
+              no figure: with nothing reported that is the empty period the basis already names,
+              and with reporting days it is a band peak absorbed entirely - and headlining either
+              "0 min" trips the app-wide zero rule pages.test.tsx pins. */}
+          <div className="band-tiles">
+            {bands.map((band) => {
+              const total = sum(band.values.filter((v): v is number => v !== null))
+              if (total <= 0) return null
+              return (
+                <div key={band.key} className="band-tile">
+                  <span className="band-tile-name">{band.name}</span>
+                  <span className="band-tile-value">{formatNumber(total, 0, i18n.language, '')} {t('activity.units.min')}</span>
+                </div>
+              )
+            })}
+          </div>
           <StackedDailyBars series={bands} labels={rangeDates} metric="active_minutes_light"
             label={t('activity.activityBands.chartLabel', { period })}
             unit={t('activity.units.minutes')} axisUnit={t('activity.units.min')} />
