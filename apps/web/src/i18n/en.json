@@ -345,6 +345,12 @@
       "basisNoData": "calendar heatmap, no readings in these {{total}} days, every day carries an absence dot",
       "chartLabel": "Steps per day through {{period}}"
     },
+    "dailyWorkouts": {
+      "label": "Daily workouts",
+      "basis": "calendar heatmap, {{reported}} of {{total}} days, 0 to {{maxWorkouts}} workouts, stronger colour is more workouts, days with no reading carry an absence dot",
+      "basisNoData": "calendar heatmap, no readings in these {{total}} days, every day carries an absence dot",
+      "chartLabel": "Workouts per day through {{period}}"
+    },
     "distance": {
       "label": "Distance",
       "basis": "sum, {{reported}} of {{total}} days",
@@ -549,6 +555,7 @@
       "date": "Date",
       "weekday": "Weekday",
       "steps": "Steps",
+      "workouts": "Workouts",
       "minimum": "Minimum",
       "mean": "Mean",
       "maximum": "Maximum",

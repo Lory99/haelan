@@ -15,6 +15,20 @@ import type { DayRow } from '../fixtures/july.js'
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
 /**
+ * One calendar day the heatmap can draw. Steps-only rows (the Dashboard-era shape every existing
+ * test hands in) stay valid: `workouts` is optional, and the chart reads whichever field `metric`
+ * names. Activity.tsx builds workout rows as `{ ..., steps: null, workouts: <count|null> }` so a
+ * rest day (null) draws the same absence dot a silent steps day does -- "same as steps", per the
+ * activity redesign brief, rather than a second visual vocabulary for one grid.
+ */
+export type HeatmapDay = DayRow & { workouts?: number | null }
+
+function heatValue(day: HeatmapDay | undefined, metric: 'steps' | 'workout_count'): number | null | undefined {
+  if (day === undefined) return undefined
+  return metric === 'workout_count' ? (day.workouts ?? null) : day.steps
+}
+
+/**
  * Which local date a click on this heatmap landed on: a cell click carries a [week, weekday, ...]
  * tuple that names a cell, and a click on one of the overlay marks carries a marker descriptor
  * instead, resolved through `markDates` by the markPoint's own dataIndex.
@@ -54,10 +68,14 @@ export function heatmapClickDate(
 // chart-lifecycle.test.tsx guards against.
 const EMPTY = Object.freeze([]) as never[]
 
-export function ActivityHeatmap({ days, max, label, annotations = EMPTY, excluded = EMPTY, onPointClick }: {
-  days: DayRow[]
+export function ActivityHeatmap({ days, max, label, metric = 'steps', annotations = EMPTY, excluded = EMPTY, onPointClick }: {
+  days: HeatmapDay[]
   max: number
   label: string
+  // Steps by default, so every existing caller (and its tests) keeps reading DayRow.steps with no
+  // change. Activity.tsx passes 'workout_count' for the second card in the first row, which reads
+  // HeatmapDay.workouts instead, through the same calendar grid, colour ramp and absence dots.
+  metric?: 'steps' | 'workout_count'
   // Same prop names and shapes HeartRateRange has taken since D1, so a page hands every chart type
   // the same annotations/excluded values instead of building a different shape per chart. Optional
   // here (HeartRateRange's own pair is required) because this chart's own default parameter (EMPTY,
@@ -95,12 +113,13 @@ export function ActivityHeatmap({ days, max, label, annotations = EMPTY, exclude
 
   const build = useCallback((tokens: ChartTokens): EChartsOption => {
     const base = chartBase(tokens)
+    const valueHeader = metric === 'workout_count' ? t('charts.columns.workouts') : t('charts.columns.steps')
     const worn = cells.flatMap((c, i) => {
-      const steps = days[i]?.steps
-      return steps === null || steps === undefined ? [] : [[c.week, c.weekday, steps]]
+      const value = heatValue(days[i], metric)
+      return value === null || value === undefined ? [] : [[c.week, c.weekday, value]]
     })
     // Absence gets its own mark: an unpainted cell would be indistinguishable from the bottom of the scale.
-    const absent = cells.flatMap((c, i) => (days[i]?.steps === null ? [[c.week, c.weekday]] : []))
+    const absent = cells.flatMap((c, i) => (heatValue(days[i], metric) === null ? [[c.week, c.weekday]] : []))
     return {
       grid: base.grid({ left: 30, top: 10, bottom: 20 }),
       tooltip: {
@@ -136,7 +155,7 @@ export function ActivityHeatmap({ days, max, label, annotations = EMPTY, exclude
             const index = cells.findIndex((c) => c.week === week && c.weekday === weekday)
             const cell = cells[index]
             if (!cell) return ''
-            const steps = days[index]?.steps
+            const dayValue = heatValue(days[index], metric)
             // formatMetricValue, not a bare template literal or a standalone toLocaleString call:
             // echarts' own default rendered thousands-grouped ("11,999") and a bare template
             // literal would have lost that, so grouping was always needed here. It used to come
@@ -149,9 +168,12 @@ export function ActivityHeatmap({ days, max, label, annotations = EMPTY, exclude
             // independent implementations in agreement by habit. i18n.language is a primitive in
             // `build`'s own deps below, not a fresh identity per render, so this carries no dispose
             // risk beyond what `t` already causes on a language change.
-            const text = steps === null || steps === undefined
+            // `metric` (not a hardcoded 'steps') for the same reason the table row below takes it:
+            // the workouts card reads counts through this same formatter, so grouping and unit
+            // stay consistent between the hover text and the row.
+            const text = dayValue === null || dayValue === undefined
               ? t(excluded.includes(cell.date) ? 'charts.absence.excluded' : 'charts.absence.noReading')
-              : `${t('charts.columns.steps')}: ${formatMetricValue(steps, 'steps', i18n.language, '')}`
+              : `${valueHeader}: ${formatMetricValue(dayValue, metric, i18n.language, '')}`
             return tip`${cell.date}<br/>${text}`
           }
           return ''
@@ -214,7 +236,7 @@ export function ActivityHeatmap({ days, max, label, annotations = EMPTY, exclude
         },
       ],
     }
-  }, [cells, days, weeks, max, weekdayLabels, marks, excluded, t, i18n.language])
+  }, [cells, days, weeks, max, metric, weekdayLabels, marks, excluded, t, i18n.language])
 
   const markDates = useMemo(() => marks.map((mark) => mark.date), [marks])
   const onClick = useCallback((event: ECElementEvent) => {
@@ -235,11 +257,12 @@ export function ActivityHeatmap({ days, max, label, annotations = EMPTY, exclude
   // renders an annotate control that names a point and then does nothing when pressed. See
   // useChart's ChartPointHandlers doc comment; chart-annotate-handlers.test.tsx pins it.
   const { host, style, tap } = useChart(build, 110, onPointClick ? { onClick, describe } : undefined)
+  const valueColumn = metric === 'workout_count' ? t('charts.columns.workouts') : t('charts.columns.steps')
   return (
     <ChartFigure label={label} host={host} style={style} tap={tap}
       table={{
-        columns: [t('charts.columns.date'), t('charts.columns.weekday'), t('charts.columns.steps'), t('charts.columns.note')],
-        // A day's own DayRow.steps is only ever null because no point exists for it (a real
+        columns: [t('charts.columns.date'), t('charts.columns.weekday'), valueColumn, t('charts.columns.note')],
+        // A day's own value is only ever null because no point exists for it (a real
         // reading is never itself null; see useSeries.ts), not because a coverage figure said the
         // device was off. "not worn" states a cause this table cannot establish; "no reading" is
         // the one thing that is always true of a blank cell.
@@ -254,9 +277,10 @@ export function ActivityHeatmap({ days, max, label, annotations = EMPTY, exclude
           // screen reader landing on this row got two different strings for one fact. Precision
           // was never wrong here (steps is an integer, catalogue precision 0), only the grouping
           // channel disagreed with itself, which is what routing both through the one call above
-          // closes.
+          // closes. `metric` keeps the workouts card on the same contract through its own
+          // catalogue precision.
           return [c.date, weekdayLabels[c.weekday] ?? '',
-            formatMetricValue(days[i]?.steps ?? null, 'steps', i18n.language, absent),
+            formatMetricValue(heatValue(days[i], metric) ?? null, metric, i18n.language, absent),
             [isExcluded ? t('charts.absence.excluded') : '',
               // filter, not find: several annotations (an override reason, a note, an event) can
               // land on the same date now that day level marks join the per-metric ones, and a

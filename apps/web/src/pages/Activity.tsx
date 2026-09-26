@@ -276,6 +276,39 @@ export function Activity() {
       : t('activity.dailySteps.basis', stated)
   }
 
+  // Daily workouts heatmap, the second half of the first row. Same calendar grid, colour ramp
+  // and absence dots as the steps card beside it (ActivityHeatmap with metric="workout_count"),
+  // same dense-by-date treatment and the same max-based colour domain ("same as steps", per the
+  // redesign brief). workout_count carries no wear signal (coverageSignal), so unlike stepsBasis
+  // above there is no worn clause here -- reported against total is the whole claim. A day with no
+  // workouts draws the same absence dot a silent steps day does: a rest day and a silent day are
+  // both "no count row", and inventing a second visual vocabulary for one grid would split the row
+  // it sits in.
+  const workoutPoints = metricGroups.pointsOf('workout_count')
+  const workoutHeatmapDays = useMemo(() => {
+    const workoutsByDate = new Map(workoutPoints.map((p) => [p.localDate, p]))
+    return rangeDates.map((date) => {
+      const point = workoutsByDate.get(date)
+      return {
+        date, hrMin: null, hrMean: null, hrMax: null, sleepMinutes: null,
+        steps: null, workouts: point?.value ?? null,
+        worn: point !== undefined,
+      }
+    })
+  }, [rangeDates, workoutPoints])
+  const maxWorkouts = Math.max(0, ...values(workoutPoints))
+  const workoutsQuery = metricGroups.queryFor('workout_count')
+  const workoutsOverrides = annotationsFor(overridesByMetricMap, 'workout_count')
+  const workoutsAnnotations = annotationsWithDay(dayAnnotationsByMetric, dayAnnotations, 'workout_count')
+  const workoutsBasis = (): string | undefined => {
+    if (workoutsQuery.isError || workoutsQuery.isPending) return undefined
+    if (workoutPoints.length === 0) return t('activity.dailyWorkouts.basisNoData', { total: rangeDates.length })
+    return t('activity.dailyWorkouts.basis', {
+      reported: workoutPoints.length, total: rangeDates.length,
+      maxWorkouts: formatMetricValue(maxWorkouts, 'workout_count', i18n.language, ''),
+    })
+  }
+
   // Every tile on this page shares one shape, sparkline or bar chart alike: a metric, a sum over
   // the period, and a basis line stating how many of the range's calendar days answered.
   // Parameterised on
@@ -351,12 +384,25 @@ export function Activity() {
       <h1 style={{ fontSize: 'var(--font-size-lg)', margin: '0 0 var(--space-3)' }}>{t('activity.title')}</h1>
       <ControlRow controls={resolved} sources={sources} exportPath={exportPath} trendNote yearCompare />
       <CardGrid>
-        <Card span={12} label={t('activity.dailySteps.label')} basis={stepsBasis()}>
+        {/* First row, two halves: steps on the left, workouts on the right. Same ActivityHeatmap
+            component and default map style in both, the workouts card reading workout_count through
+            metric="workout_count" with the same max-based colour domain as steps. */}
+        <Card span={6} label={t('activity.dailySteps.label')} basis={stepsBasis()}>
           {stepsQuery.isError ? <ErrorState onRetry={() => void stepsQuery.refetch()} error={stepsQuery.error} />
             : stepsQuery.isPending ? <Loading /> : (
             <ActivityHeatmap days={heatmapDays} max={maxSteps} label={t('activity.dailySteps.chartLabel', { period })}
               annotations={stepsAnnotations} excluded={stepsOverrides.excluded}
               onPointClick={(localDate) => setAnnotateTarget({ scope: 'day_metric', localDate, metric: 'steps' })} />
+          )}
+        </Card>
+
+        <Card span={6} label={t('activity.dailyWorkouts.label')} basis={workoutsBasis()}>
+          {workoutsQuery.isError ? <ErrorState onRetry={() => void workoutsQuery.refetch()} error={workoutsQuery.error} />
+            : workoutsQuery.isPending ? <Loading /> : (
+            <ActivityHeatmap days={workoutHeatmapDays} max={maxWorkouts} metric="workout_count"
+              label={t('activity.dailyWorkouts.chartLabel', { period })}
+              annotations={workoutsAnnotations} excluded={workoutsOverrides.excluded}
+              onPointClick={(localDate) => setAnnotateTarget({ scope: 'day_metric', localDate, metric: 'workout_count' })} />
           )}
         </Card>
 

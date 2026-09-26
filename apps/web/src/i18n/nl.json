@@ -345,6 +345,12 @@
       "basisNoData": "kalenderwarmtekaart, geen metingen in deze {{total}} dagen, elke dag heeft een afwezigheidsstip",
       "chartLabel": "Stappen per dag in {{period}}"
     },
+    "dailyWorkouts": {
+      "label": "Dagelijkse work-outs",
+      "basis": "kalenderwarmtekaart, {{reported}} van {{total}} dagen, 0 tot {{maxWorkouts}} work-outs, sterkere kleur is meer work-outs, dagen zonder meting hebben een afwezigheidsstip",
+      "basisNoData": "kalenderwarmtekaart, geen metingen in deze {{total}} dagen, elke dag heeft een afwezigheidsstip",
+      "chartLabel": "Work-outs per dag in {{period}}"
+    },
     "distance": {
       "label": "Afstand",
       "basis": "som, {{reported}} van {{total}} dagen",
@@ -549,6 +555,7 @@
       "date": "Datum",
       "weekday": "Weekdag",
       "steps": "Stappen",
+      "workouts": "Work-outs",
       "minimum": "Minimum",
       "mean": "Gemiddelde",
       "maximum": "Maximum",
