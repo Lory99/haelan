@@ -148,6 +148,39 @@ function stubSteps(points: readonly { localDate: string, value: number, coverage
 }
 
 /**
+ * stubSteps plus a phone-only history starting August 1st: the page-wide clamp (usePageControls)
+ * moves `from` to the first sync, but the heatmap cards draw the whole tab window regardless.
+ * Midday UTC keeps the local date (Europe/Amsterdam, UTC+2 in August) safely on August 1st.
+ */
+function stubClampedHistory(points: readonly { localDate: string, value: number, coverage: number | null }[]): () => void {
+  const original = globalThis.fetch
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input)
+    const json = (body: unknown) =>
+      new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    if (url.includes('/api/auth/me')) return json(PERSON)
+    if (url.includes('/companion/cursors')) {
+      return json({ historyStartMs: Date.UTC(2026, 7, 1, 12), googleConnected: false, items: [] })
+    }
+    if (url.includes('/series')) {
+      const metrics = new URLSearchParams(url.split('?')[1] ?? '').getAll('metric')
+      return json(Object.fromEntries(metrics.map((metric) => [metric, {
+        points: metric === 'steps'
+          ? points.map((p) => seriesPoint(metric, p.localDate, p.value, { coverage: p.coverage }))
+          : [],
+        reduction: null,
+      }])))
+    }
+    if (url.includes('/insights')) return json(insightBody(url))
+    if (url.includes('/api/sync/status')) {
+      return json({ running: false, lastFinishedAtMs: null, rebuild: NO_REBUILD_NEWS })
+    }
+    return json({})
+  }) as typeof fetch
+  return () => { globalThis.fetch = original }
+}
+
+/**
  * Same routes as stubActivity, but every metric named in `overrides` answers that value instead
  * of the uniform 60, and every other metric still gets 60 (steps' own coverage/source shape,
  * since none of the tests below read the heatmap). Used by the precision/grouping tests below,
@@ -368,6 +401,26 @@ describe('the Activity page', () => {
     await flush(client, () => container!.innerHTML)
     expect(container!.textContent).toContain('0 to 60 steps')
     expect(container!.textContent).toContain('stronger colour is more steps')
+    restore()
+  })
+
+  // The pre-sync months are squares, not a torn-out calendar: with a phone-only history starting
+  // in August, the page-wide clamp moves every other card's range to August, but the heatmap
+  // cards draw the whole tab window. January renders as dated, no-reading squares, and the basis
+  // counts the full 365-day span it draws rather than the clamped one. Without the exception the
+  // year opened at August (153 clamped days, no January row at all).
+  it('draws pre-sync months as no-reading squares on a clamped year', async () => {
+    window.history.replaceState(null, '', '/activity?range=year&on=2026-08-15')
+    const restore = stubClampedHistory([
+      { localDate: '2026-08-15', value: 4000, coverage: 0.9 },
+    ])
+    const { client, tree } = withQuery(<Activity />)
+    mount(<I18nProvider lng="en">{tree}</I18nProvider>)
+    await flush(client, () => container!.innerHTML)
+    const text = container!.textContent!
+    expect(text).toContain('2026-01-01')
+    expect(text).toContain('calendar heatmap, 1 of 365 days')
+    expect(text).not.toMatch(/calendar heatmap, 1 of 15[0-9] days/)
     restore()
   })
 

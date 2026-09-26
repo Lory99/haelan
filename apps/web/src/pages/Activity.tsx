@@ -23,6 +23,7 @@ import { SessionList } from './activity/SessionList.js'
 import { bandSeries } from './activity/bandSeries.js'
 import { TrainingLoadCard } from './activity/TrainingLoadCard.js'
 import { ALL_SOURCES, resolveSource } from '../controls/source.js'
+import { datesFor } from '../controls/range.js'
 import { useSession } from '../auth/session.js'
 import { denseSeries, useSeries } from '../data/useSeries.js'
 import type { SeriesPoint } from '../data/useSeries.js'
@@ -227,6 +228,20 @@ export function Activity() {
     total: rangeDates.length,
   })
 
+  // The heatmaps draw the whole tab window, not the history-clamped range every other card on
+  // this page reads. A wall calendar with its pre-sync months torn out reads as broken: the
+  // current year opened at August with no January-to-July squares at all, while a year with no
+  // data drew the full twelve months of empties (the clamp leaves a range ending before the
+  // history start alone, range.ts). Pre-history days read "no reading" like any other silent day,
+  // never "not worn" and never zero, so nothing here claims inactivity; the totals above each
+  // grid still sum reported days only. The basis denominator follows what is drawn (the full
+  // window), not the clamped range: "120 of 150 days" under 365 squares would count a different
+  // grid than the one on screen. Queries, tiles and comparisons stay on the clamped range.
+  const heatmapDates = useMemo(() => {
+    const window = datesFor(controls.tab, controls.anchor)
+    return datesBetween(window.from, window.to)
+  }, [controls.tab, controls.anchor])
+
   // Daily steps heatmap, moved here from Dashboard.tsx rather than copied: same dense-by-date
   // treatment (a day nothing reported still gets a calendar cell, drawn as an absence dot, instead
   // of silently compressing the grid), same dense denominator (every calendar day in range, not
@@ -236,7 +251,7 @@ export function Activity() {
   const stepsPoints = metricGroups.pointsOf('steps')
   const heatmapDays = useMemo(() => {
     const stepsByDate = new Map(stepsPoints.map((p) => [p.localDate, p]))
-    return rangeDates.map((date) => {
+    return heatmapDates.map((date) => {
       const point = stepsByDate.get(date)
       return {
         date, hrMin: null, hrMean: null, hrMax: null, sleepMinutes: null,
@@ -244,7 +259,7 @@ export function Activity() {
         worn: point !== undefined && (wornOn('steps', point) ?? true),
       }
     })
-  }, [rangeDates, stepsPoints])
+  }, [heatmapDates, stepsPoints])
   const maxSteps = Math.max(0, ...values(stepsPoints))
   // Nothing is stated while the request is in flight: heatmapDays is dense from the moment the page
   // mounts, so counting it before anything has settled would read "0 of 31 days", a specific false
@@ -265,10 +280,10 @@ export function Activity() {
     // A settled but empty period is neither pending nor errored, so without this it rendered
     // "0 of 31 days, 0 to 0 steps": a count of nothing, plus a colour domain claimed from no
     // readings at all.
-    if (stepsPoints.length === 0) return t('activity.dailySteps.basisNoData', { total: rangeDates.length })
+    if (stepsPoints.length === 0) return t('activity.dailySteps.basisNoData', { total: heatmapDates.length })
     const answers = stepsPoints.map((point) => wornOn('steps', point))
     const stated = {
-      reported: stepsPoints.length, total: rangeDates.length,
+      reported: stepsPoints.length, total: heatmapDates.length,
       maxSteps: formatMetricValue(maxSteps, 'steps', i18n.language, ''),
     }
     return coverageIsWearSignal('steps')
@@ -287,7 +302,7 @@ export function Activity() {
   const workoutPoints = metricGroups.pointsOf('workout_count')
   const workoutHeatmapDays = useMemo(() => {
     const workoutsByDate = new Map(workoutPoints.map((p) => [p.localDate, p]))
-    return rangeDates.map((date) => {
+    return heatmapDates.map((date) => {
       const point = workoutsByDate.get(date)
       return {
         date, hrMin: null, hrMean: null, hrMax: null, sleepMinutes: null,
@@ -295,16 +310,16 @@ export function Activity() {
         worn: point !== undefined,
       }
     })
-  }, [rangeDates, workoutPoints])
+  }, [heatmapDates, workoutPoints])
   const maxWorkouts = Math.max(0, ...values(workoutPoints))
   const workoutsQuery = metricGroups.queryFor('workout_count')
   const workoutsOverrides = annotationsFor(overridesByMetricMap, 'workout_count')
   const workoutsAnnotations = annotationsWithDay(dayAnnotationsByMetric, dayAnnotations, 'workout_count')
   const workoutsBasis = (): string | undefined => {
     if (workoutsQuery.isError || workoutsQuery.isPending) return undefined
-    if (workoutPoints.length === 0) return t('activity.dailyWorkouts.basisNoData', { total: rangeDates.length })
+    if (workoutPoints.length === 0) return t('activity.dailyWorkouts.basisNoData', { total: heatmapDates.length })
     return t('activity.dailyWorkouts.basis', {
-      reported: workoutPoints.length, total: rangeDates.length,
+      reported: workoutPoints.length, total: heatmapDates.length,
       maxWorkouts: formatMetricValue(maxWorkouts, 'workout_count', i18n.language, ''),
     })
   }
