@@ -904,7 +904,12 @@ button.contrib-day { cursor: pointer; }
 button.contrib-day:hover { outline: 2px solid var(--text-faint); outline-offset: 1px; }
 .contrib-day:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 /* The six shades, read off the chart's own scale ramp so the grid follows the theme exactly as
-   the echarts charts do. Level 0 is the empty square: a day with no reading, or a true zero. */
+   the echarts charts do. Level 0 is the empty square: a day with no reading, or a true zero. It
+   mixes toward the axis colour rather than sitting on the bare grid colour, because on dark the
+   card (slate.900) and the grid (slate.925) are one step apart and empty squares rendered
+   invisible: a 3-month grid read as missing cells rather than quiet ones. The mix lands as a
+   GitHub-style solid grey in both themes, off the card and off the blue ramp alike. */
+.contrib-day[data-level="0"] { background: color-mix(in srgb, var(--chart-axis) 55%, var(--chart-grid)); }
 .contrib-day[data-level="1"] { background: var(--chart-scale-1); }
 .contrib-day[data-level="2"] { background: var(--chart-scale-2); }
 .contrib-day[data-level="3"] { background: var(--chart-scale-3); }

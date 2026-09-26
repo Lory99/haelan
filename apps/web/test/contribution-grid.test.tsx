@@ -120,6 +120,20 @@ describe('ContributionGrid', () => {
     expect(container!.querySelector('.contrib-legend')).toBeNull()
   })
 
+  // A long range starting mid-week still draws every in-range day: fourteen dates starting on a
+  // Wednesday are fourteen squares (five plus seven plus two), and the days with no reading are
+  // empty level-0 squares in the DOM rather than holes in the grid.
+  it('draws every in-range day in columns mode, including days with no reading', () => {
+    const dates = Array.from({ length: 14 }, (_, i) => `2026-07-${String(i + 1).padStart(2, '0')}`)
+    const days: HeatmapDay[] = dates.map((date, i) => day(date, i % 4 === 0 ? null : 1000 + i))
+    mountGrid(<ContributionGrid days={days} max={2000} label="Steps per day" layout="columns"
+      totalValue="10,000" totalUnit="steps" onPointClick={() => {}} />)
+    expect(squares()).toHaveLength(14)
+    expect(square('2026-07-01').getAttribute('data-level')).toBe('0')
+    expect(square('2026-07-01').getAttribute('aria-label')).toContain('no reading')
+    expect(square('2026-07-02').getAttribute('data-level')).not.toBe('0')
+  })
+
   // Paint: the level rides the value against this period's max, through the data attribute the
   // stylesheet reads, so no computed colour is asserted here (happy-dom applies no stylesheet).
   it('buckets each square against the period max', () => {
