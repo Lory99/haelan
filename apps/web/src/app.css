@@ -608,16 +608,13 @@ html:has(dialog.period-sheet[open]), html:has(dialog.status-sheet[open]), html:h
 /* WorkoutDynamics.tsx's own tile row - up to five StatTiles, fewer when a session recorded fewer
    of the five fields, wrapping onto a second row on a narrow viewport rather than compressing. */
 .workout-dynamics { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-3); }
-/* Activity's zone minutes card, which holds the same StatTiles as .workout-dynamics but in a
-   span-12 card rather than a narrow one. `1fr` there divides a workout card's width between a
-   handful of tiles and reads well; across 1214px it gave each of three tiles some 400px, and
-   StatTile's header is a space-between flex row, so every label sat a third of a screen away from
-   its own delta badge. A capped track keeps the three figures close enough to compare, which is
-   the only reason they share a card, and `justify-content: start` stops the grid spreading the
-   tracks out again once they stop filling the row. */
+/* Activity's zone minutes card: three StatTiles in one row at any card width. repeat(3, 1fr)
+   rather than auto-fit, so the tiles compress side by side instead of wrapping into a stack in
+   the narrow span-4 card; minmax(0, 1fr) with the tile's own min-width: 0 below lets a long label
+   shrink inside its third instead of pushing the track wider than its share. */
 .zone-tiles {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 230px));
-  justify-content: start; gap: var(--space-4) var(--space-5);
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-3);
 }
 /* One box per tile. Without it the grid's children are StatTile's own three elements rather than
    its tiles, and auto-fit flows label, value and basis into separate columns. min-width: 0 for the
