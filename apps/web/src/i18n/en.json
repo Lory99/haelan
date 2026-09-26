@@ -645,10 +645,6 @@
       "hide": "Hide numbers",
       "showFor": "Show numbers for {{label}}",
       "hideFor": "Hide numbers for {{label}}"
-    },
-    "legend": {
-      "less": "Less",
-      "more": "More"
     }
   },
   "sleep": {

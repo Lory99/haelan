@@ -880,16 +880,16 @@ html:has(dialog.period-sheet[open]), html:has(dialog.status-sheet[open]), html:h
 .cal-sheet .cal-nav { width: 44px; height: 44px; }
 .cal-sheet .cal-today { min-height: 44px; padding: 0 var(--space-2); }
 
-/* ContributionGrid.tsx: the activity grids as calendar-style squares. One row per week, Monday
-   to Sunday left to right: days run horizontally so a week or a month of squares occupies the
-   card rather than huddling in its corner. The 1fr tracks fill the card up to --contrib-max, so
-   squares stay comparable across ranges instead of gigantic on a week or tiny in a phone card;
-   aspect-ratio (not a fixed height) is what keeps every cell a square while the track widths stay
-   fractional. The weekday header and the grid read the same gutter and the same columns, so the
-   day names above always sit over the column they name. */
-.contrib { --contrib-gutter: 34px; overflow-x: auto; padding-bottom: var(--space-1); }
-.contrib-wdays, .contrib-grid { display: grid; gap: 6px; width: 100%; max-width: 560px; }
-.contrib-wdays { margin-bottom: var(--space-1); }
+/* ContributionGrid.tsx: the activity grids as calendar-style squares, in two shapes. Rows mode
+   (up to a month) runs one row per week, Monday to Sunday left to right, filling the card up to
+   --contrib-max; columns mode (past a month) draws GitHub's own vertical week columns of small
+   fixed cells, scrolling sideways inside the card. The header row and the grid read the same
+   gutter and the same columns in each mode, so the names above always sit over what they name. */
+.contrib { --contrib-gutter: 34px; --contrib-cell: 15px; overflow-x: auto; padding-bottom: var(--space-1); }
+.contrib-head, .contrib-grid { display: grid; }
+.contrib-head { margin-bottom: var(--space-1); }
+.contrib[data-layout="rows"] .contrib-head, .contrib[data-layout="rows"] .contrib-grid { gap: 6px; width: 100%; max-width: 560px; }
+.contrib[data-layout="columns"] .contrib-head, .contrib[data-layout="columns"] .contrib-grid { gap: 4px; width: max-content; }
 .contrib-month { font-size: var(--font-size-micro); color: var(--text-faint); white-space: nowrap; align-self: center; }
 .contrib-wday { font-size: var(--font-size-micro); color: var(--text-faint); white-space: nowrap; overflow: hidden; }
 /* appearance/font reset: most squares are buttons (the annotate tap target), and a button without
@@ -911,16 +911,11 @@ button.contrib-day:hover { outline: 2px solid var(--text-faint); outline-offset:
 .contrib-day[data-level="4"] { background: var(--chart-scale-4); }
 .contrib-day[data-level="5"] { background: var(--chart-scale-5); }
 /* An excluded day keeps its square but wears the excluded colour, and an annotated day an inset
-   ring in the annotation colour: the grid's geometry never changes, only the paint. */
+   ring in the annotation colour: the grid's geometry never changes, only the paint. Small
+   column-mode squares take the tighter radius. */
 .contrib-day[data-excluded] { background: var(--chart-state-excluded); }
 .contrib-day[data-annotated] { box-shadow: inset 0 0 0 2px var(--chart-stage-awake); }
-/* The legend's swatches are fixed-size by definition (they name shades, not days), while grid
-   squares size from the track: the extra class only pins the size, the shade still comes from
-   data-level above. */
-.contrib-sw { width: 12px; }
-.contrib-legend { display: flex; align-items: center; gap: 4px; margin-top: var(--space-2); font-size: var(--font-size-micro); color: var(--text-muted); }
-.contrib-legend span:first-child { margin-right: 2px; }
-.contrib-legend span:last-child { margin-left: 2px; }
+.contrib[data-layout="columns"] .contrib-day { border-radius: 4px; }
 
 /* The weight sits on the title's own <strong> rather than on the heading: the tokens carry no
    regular weight to put the muted subtitle back to, so the heading is left at the body's weight

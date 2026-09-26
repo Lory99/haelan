@@ -309,6 +309,11 @@ export function Activity() {
     })
   }
 
+  // Past a month the horizontal rows would run to dozens of tall full-width rows, so both
+  // heatmap cards switch to vertical week columns with small squares; the day, week and month
+  // tabs keep the horizontal rows that fill the card.
+  const heatmapLayout = controls.tab === '3months' || controls.tab === 'year' ? 'columns' : 'rows'
+
   // Every tile on this page shares one shape, sparkline or bar chart alike: a metric, a sum over
   // the period, and a basis line stating how many of the range's calendar days answered.
   // Parameterised on
@@ -395,6 +400,7 @@ export function Activity() {
             : stepsQuery.isPending ? <Loading /> : (
             <ContributionGrid days={heatmapDays} max={maxSteps}
               label={t('activity.dailySteps.chartLabel', { period })}
+              layout={heatmapLayout}
               totalValue={stepsPoints.length === 0 ? undefined
                 : formatMetricValue(sum(values(stepsPoints)), 'steps', i18n.language, '')}
               totalUnit={t('activity.units.stepsShort')}
@@ -409,6 +415,7 @@ export function Activity() {
             : workoutsQuery.isPending ? <Loading /> : (
             <ContributionGrid days={workoutHeatmapDays} max={maxWorkouts} metric="workout_count"
               label={t('activity.dailyWorkouts.chartLabel', { period })}
+              layout={heatmapLayout}
               totalValue={workoutPoints.length === 0 ? undefined
                 : formatMetricValue(sum(values(workoutPoints)), 'workout_count', i18n.language, '')}
               totalUnit={t('activity.units.workoutsShort')}

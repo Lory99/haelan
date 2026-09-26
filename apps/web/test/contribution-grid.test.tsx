@@ -41,9 +41,7 @@ function mountGrid(node: React.ReactNode): void {
 }
 
 function squares(): HTMLElement[] {
-  return [...container!.querySelectorAll('.contrib-day')].filter(
-    (el) => !el.classList.contains('contrib-sw'),
-  ) as HTMLElement[]
+  return [...container!.querySelectorAll('.contrib-day')] as HTMLElement[]
 }
 
 function square(date: string): HTMLElement {
@@ -80,6 +78,7 @@ describe('ContributionGrid', () => {
   it('lays days out horizontally, one row per week', () => {
     mountGrid(<ContributionGrid days={WEEK} max={12000} label="Steps per day"
       totalValue="48,000" totalUnit="steps" onPointClick={() => {}} />)
+    expect(container!.querySelector('.contrib')?.getAttribute('data-layout')).toBe('rows')
     expect(squares()).toHaveLength(7)
     expect(squares().every((s) => s.tagName === 'BUTTON')).toBe(true)
     expect([...container!.querySelectorAll('.contrib-wday')].map((el) => el.textContent))
@@ -99,6 +98,26 @@ describe('ContributionGrid', () => {
     expect(squares()).toHaveLength(8)
     expect(square('2026-08-17').getAttribute('style')).toContain('grid-column: 2')
     expect(square('2026-08-17').getAttribute('style')).toContain('grid-row: 2')
+  })
+
+  // Past a month the grid turns sideways: one small column per week, Monday down to Sunday,
+  // with the month named above the column it opens and only three weekday names down the side.
+  it('draws vertical week columns in columns mode', () => {
+    const days: HeatmapDay[] = [...WEEK, day('2026-08-17', 9000), day('2026-08-18', 1000)]
+    mountGrid(<ContributionGrid days={days} max={12000} label="Steps per day" layout="columns"
+      totalValue="58,000" totalUnit="steps" onPointClick={() => {}} />)
+    expect(container!.querySelector('.contrib')?.getAttribute('data-layout')).toBe('columns')
+    expect(squares()).toHaveLength(9)
+    // Week one's Monday opens the first column; week two's days continue in the next.
+    expect(square('2026-08-10').getAttribute('style')).toContain('grid-column: 2')
+    expect(square('2026-08-16').getAttribute('style')).toContain('grid-row: 7')
+    expect(square('2026-08-17').getAttribute('style')).toContain('grid-column: 3')
+    expect(square('2026-08-17').getAttribute('style')).toContain('grid-row: 1')
+    // The compact chrome: month above, three weekday names beside, no legend.
+    expect(container!.querySelector('.contrib-head')?.textContent).toContain('Aug')
+    expect([...container!.querySelectorAll('.contrib-grid .contrib-wday')].map((el) => el.textContent))
+      .toEqual(['Mon', 'Wed', 'Fri'])
+    expect(container!.querySelector('.contrib-legend')).toBeNull()
   })
 
   // Paint: the level rides the value against this period's max, through the data attribute the

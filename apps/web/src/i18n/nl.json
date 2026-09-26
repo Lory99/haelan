@@ -645,10 +645,6 @@
       "hide": "Cijfers verbergen",
       "showFor": "Cijfers tonen voor {{label}}",
       "hideFor": "Cijfers verbergen voor {{label}}"
-    },
-    "legend": {
-      "less": "Minder",
-      "more": "Meer"
     }
   },
   "sleep": {

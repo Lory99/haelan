@@ -25,12 +25,14 @@ export function gridLevel(value: number | null | undefined, max: number): 0 | 1 
 }
 
 /**
- * The activity grids as calendar-style squares: one row per week, Monday to Sunday left to
- * right, filling the card's width. Days run horizontally rather than in GitHub's vertical week
- * columns, so a week or a month of squares occupies the card instead of huddling in its corner;
- * the tracks cap at a maximum square size so a year of weeks stays comparable rather than
- * gigantic. The month gutter names each row's month where it turns over, and the Less-to-More
- * legend reads the same six shades as the squares.
+ * The activity grids as calendar-style squares, in two shapes chosen by the range behind them.
+ *
+ * Up to a month the days run horizontally, one row per week, Monday to Sunday left to right,
+ * filling the card's width: a week or a month of squares occupies the card instead of huddling
+ * in its corner. Past a month the same squares switch to GitHub's own vertical week columns
+ * with small fixed squares, because dozens of full-width rows would run the card off the page.
+ * The caller picks the shape (Activity keys it off the range tab); the colours, tooltips, marks
+ * and accessible table are identical in both.
  *
  * The data contract is ActivityHeatmap's own: the same `days` rows, the same `metric` switch
  * between `steps` and `workouts`, the same absence/excluded/annotated vocabulary in the tooltip
@@ -40,11 +42,14 @@ export function gridLevel(value: number | null | undefined, max: number): 0 | 1 
  * the Card shell prints its basis above its children: handing Card the basis would read title,
  * basis, total, grid, while every other card in the app reads title, total, basis, chart.
  */
-export function ContributionGrid({ days, max, label, metric = 'steps', totalValue, totalUnit, basis, annotations = EMPTY, excluded = EMPTY, onPointClick }: {
+export function ContributionGrid({ days, max, label, metric = 'steps', layout = 'rows', totalValue, totalUnit, basis, annotations = EMPTY, excluded = EMPTY, onPointClick }: {
   days: HeatmapDay[]
   max: number
   label: string
   metric?: 'steps' | 'workout_count'
+  // 'rows' fills the card one row per week (week and month tabs); 'columns' draws one small
+  // week column per week (past a month), GitHub-style.
+  layout?: 'rows' | 'columns'
   // The period's own total, formatted by the caller (it owns i18n and the catalogue formatter):
   // steps read "48,213 steps", workouts "7 workouts", always over the filtered range. Absent when
   // no day reported at all, so an empty period never headlines the bare "0" a formatter hands
@@ -67,7 +72,8 @@ export function ContributionGrid({ days, max, label, metric = 'steps', totalValu
   const weekdayLabels = useMemo(() => WEEKDAY_KEYS.map((key) => t(`charts.weekday.${key}`)), [t])
   const valueHeader = metric === 'workout_count' ? t('charts.columns.workouts') : t('charts.columns.steps')
 
-  // One short month name per week column, printed only where the month turns over, GitHub-style.
+  // One short month name per week, printed where the month turns over: beside the row in rows
+  // mode, above the column in columns mode.
   const monthLabels = useMemo(() => {
     const out: (string | null)[] = []
     let prev = ''
@@ -116,19 +122,37 @@ export function ContributionGrid({ days, max, label, metric = 'steps', totalValu
         <div className="value">{totalValue}{totalUnit && <span style={{ fontSize: 'var(--font-size-lg)', color: 'var(--text-muted)' }}> {totalUnit}</span>}</div>
       )}
       {basis !== undefined && <p className="basis">{basis}</p>}
-      <div className="contrib" role="group" aria-label={label}>
-        <div className="contrib-wdays" aria-hidden="true"
-          style={{ gridTemplateColumns: `var(--contrib-gutter) repeat(7, minmax(0, 1fr))` }}>
-          <span />
-          {weekdayLabels.map((weekday, index) => <span key={index} className="contrib-wday">{weekday}</span>)}
-        </div>
+      {/* Seven fractional tracks in rows mode (Monday to Sunday, filling the card up to
+          --contrib-max); one fixed small track per week in columns mode, scrolling sideways. */}
+      <div className="contrib" role="group" aria-label={label} data-layout={layout}>
+        {layout === 'rows' ? (
+          <div className="contrib-head" aria-hidden="true"
+            style={{ gridTemplateColumns: 'var(--contrib-gutter) repeat(7, minmax(0, 1fr))' }}>
+            <span />
+            {weekdayLabels.map((weekday, index) => <span key={index} className="contrib-wday">{weekday}</span>)}
+          </div>
+        ) : (
+          <div className="contrib-head" aria-hidden="true"
+            style={{ gridTemplateColumns: `var(--contrib-gutter) repeat(${weeks}, var(--contrib-cell))` }}>
+            <span />
+            {monthLabels.map((month, week) => <span key={week} className="contrib-month">{month ?? ''}</span>)}
+          </div>
+        )}
         <div className="contrib-grid"
-          style={{ gridTemplateColumns: `var(--contrib-gutter) repeat(7, minmax(0, 1fr))` }}>
-          {monthLabels.map((month, week) => (
-            <span key={week} className="contrib-month" style={{ gridColumn: 1, gridRow: week + 1 }}>
-              {month ?? ''}
-            </span>
-          ))}
+          style={{ gridTemplateColumns: layout === 'rows'
+            ? 'var(--contrib-gutter) repeat(7, minmax(0, 1fr))'
+            : `var(--contrib-gutter) repeat(${weeks}, var(--contrib-cell))` }}>
+          {layout === 'rows'
+            ? monthLabels.map((month, week) => (
+              <span key={week} className="contrib-month" style={{ gridColumn: 1, gridRow: week + 1 }}>
+                {month ?? ''}
+              </span>
+            ))
+            : [0, 2, 4].map((weekday) => (
+              <span key={weekday} className="contrib-wday" style={{ gridColumn: 1, gridRow: weekday + 1 }}>
+                {weekdayLabels[weekday] ?? ''}
+              </span>
+            ))}
           {cells.map((cell) => {
             const value = heatValue(byDate.get(cell.date), metric)
             const isExcluded = excluded.includes(cell.date)
@@ -136,7 +160,11 @@ export function ContributionGrid({ days, max, label, metric = 'steps', totalValu
             const tip = tipFor(cell.date)
             const square = {
               className: 'contrib-day',
-              style: { gridColumn: cell.weekday + 2, gridRow: cell.week + 1 },
+              // Rows: across the week (Monday opens the row); columns: down the week (Monday
+              // opens the column), GitHub's own order.
+              style: layout === 'rows'
+                ? { gridColumn: cell.weekday + 2, gridRow: cell.week + 1 }
+                : { gridColumn: cell.week + 2, gridRow: cell.weekday + 1 },
               'data-level': gridLevel(value, max),
               'data-excluded': isExcluded || undefined,
               'data-annotated': note !== '' || undefined,
@@ -150,13 +178,6 @@ export function ContributionGrid({ days, max, label, metric = 'steps', totalValu
               : <button key={cell.date} type="button" {...square} aria-label={tip}
                   onClick={() => onPointClick(cell.date)} />
           })}
-        </div>
-        <div className="contrib-legend" aria-hidden="true">
-          <span>{t('charts.legend.less')}</span>
-          {[0, 1, 2, 3, 4, 5].map((level) => (
-            <span key={level} className="contrib-day contrib-sw" data-level={level} />
-          ))}
-          <span>{t('charts.legend.more')}</span>
         </div>
       </div>
       {/* The same show-numbers contract ChartFigure gives every echarts chart: the table sits in the
