@@ -25,26 +25,35 @@ export function gridLevel(value: number | null | undefined, max: number): 0 | 1 
 }
 
 /**
- * The activity grids as GitHub-style squares: fixed-size squares with real gaps, week columns,
- * month labels across the top, Mon/Wed/Fri down the side, and a Less-to-More legend. The old
- * echarts heatmap stretched each cell to fill its band, so a month of steps read as wide
- * rectangles; these squares keep their shape at every range because their size comes from CSS,
- * never from the number of weeks on screen.
+ * The activity grids as calendar-style squares: one row per week, Monday to Sunday left to
+ * right, filling the card's width. Days run horizontally rather than in GitHub's vertical week
+ * columns, so a week or a month of squares occupies the card instead of huddling in its corner;
+ * the tracks cap at a maximum square size so a year of weeks stays comparable rather than
+ * gigantic. The month gutter names each row's month where it turns over, and the Less-to-More
+ * legend reads the same six shades as the squares.
  *
  * The data contract is ActivityHeatmap's own: the same `days` rows, the same `metric` switch
  * between `steps` and `workouts`, the same absence/excluded/annotated vocabulary in the tooltip
- * and the same accessible table beside the grid. Only the rendering changed, so the basis lines
- * above both cards say exactly what they said before.
+ * and the same accessible table beside the grid. Only the rendering changed.
+ *
+ * The headline and basis sit inside the grid in StatTile's own order (value, then basis), because
+ * the Card shell prints its basis above its children: handing Card the basis would read title,
+ * basis, total, grid, while every other card in the app reads title, total, basis, chart.
  */
-export function ContributionGrid({ days, max, label, metric = 'steps', totalValue, totalUnit, annotations = EMPTY, excluded = EMPTY, onPointClick }: {
+export function ContributionGrid({ days, max, label, metric = 'steps', totalValue, totalUnit, basis, annotations = EMPTY, excluded = EMPTY, onPointClick }: {
   days: HeatmapDay[]
   max: number
   label: string
   metric?: 'steps' | 'workout_count'
   // The period's own total, formatted by the caller (it owns i18n and the catalogue formatter):
-  // steps read "48,213 steps", workouts "7 workouts", always over the filtered range.
-  totalValue: string
-  totalUnit: string
+  // steps read "48,213 steps", workouts "7 workouts", always over the filtered range. Absent when
+  // no day reported at all, so an empty period never headlines the bare "0" a formatter hands
+  // back for nothing summarised (the rule pages.test.tsx's own zero assertion holds app-wide).
+  totalValue?: string
+  totalUnit?: string
+  // The card's basis line, rendered here between the headline and the grid for the StatTile order
+  // above rather than handed to Card (which would print it before the headline).
+  basis?: string
   // Same prop names and shapes ActivityHeatmap takes, so the page hands both grids the same values.
   annotations?: { date: string; text: string }[]
   excluded?: string[]
@@ -103,20 +112,21 @@ export function ContributionGrid({ days, max, label, metric = 'steps', totalValu
     <figure style={{ margin: 0 }}>
       {/* The period total in the tile's own headline style (StatTile's `.value` line), so the card
           answers "how much" at a glance and the grid below answers "on which days". */}
-      <div className="value">{totalValue}<span style={{ fontSize: 'var(--font-size-lg)', color: 'var(--text-muted)' }}> {totalUnit}</span></div>
+      {totalValue !== undefined && (
+        <div className="value">{totalValue}{totalUnit && <span style={{ fontSize: 'var(--font-size-lg)', color: 'var(--text-muted)' }}> {totalUnit}</span>}</div>
+      )}
+      {basis !== undefined && <p className="basis">{basis}</p>}
       <div className="contrib" role="group" aria-label={label}>
-        <div className="contrib-months" aria-hidden="true"
-          style={{ gridTemplateColumns: `var(--contrib-gutter) repeat(${weeks}, var(--contrib-cell))` }}>
+        <div className="contrib-wdays" aria-hidden="true"
+          style={{ gridTemplateColumns: `var(--contrib-gutter) repeat(7, minmax(0, 1fr))` }}>
           <span />
-          {monthLabels.map((month, week) => <span key={week} className="contrib-month">{month ?? ''}</span>)}
+          {weekdayLabels.map((weekday, index) => <span key={index} className="contrib-wday">{weekday}</span>)}
         </div>
         <div className="contrib-grid"
-          style={{ gridTemplateColumns: `var(--contrib-gutter) repeat(${weeks}, var(--contrib-cell))` }}>
-          {/* GitHub names three rows, not seven: the gutter stays scannable while the squares stay
-              square, and the full names remain one toggle away in the table below. */}
-          {[0, 2, 4].map((weekday) => (
-            <span key={weekday} className="contrib-wday" style={{ gridColumn: 1, gridRow: weekday + 1 }}>
-              {weekdayLabels[weekday] ?? ''}
+          style={{ gridTemplateColumns: `var(--contrib-gutter) repeat(7, minmax(0, 1fr))` }}>
+          {monthLabels.map((month, week) => (
+            <span key={week} className="contrib-month" style={{ gridColumn: 1, gridRow: week + 1 }}>
+              {month ?? ''}
             </span>
           ))}
           {cells.map((cell) => {
@@ -126,7 +136,7 @@ export function ContributionGrid({ days, max, label, metric = 'steps', totalValu
             const tip = tipFor(cell.date)
             const square = {
               className: 'contrib-day',
-              style: { gridColumn: cell.week + 2, gridRow: cell.weekday + 1 },
+              style: { gridColumn: cell.weekday + 2, gridRow: cell.week + 1 },
               'data-level': gridLevel(value, max),
               'data-excluded': isExcluded || undefined,
               'data-annotated': note !== '' || undefined,

@@ -880,23 +880,24 @@ html:has(dialog.period-sheet[open]), html:has(dialog.status-sheet[open]), html:h
 .cal-sheet .cal-nav { width: 44px; height: 44px; }
 .cal-sheet .cal-today { min-height: 44px; padding: 0 var(--space-2); }
 
-/* ContributionGrid.tsx: the activity grids as GitHub-style squares. Fixed-size cells with real
-   gaps, so a square stays a square at every range: the size comes from --contrib-cell, never from
-   the number of weeks on screen (which is what stretched the old echarts heatmap into
-   rectangles). Both the month row and the grid read the same gutter and the same columns, so the
-   month names above always sit over the week they name. */
-.contrib { --contrib-gutter: 34px; --contrib-cell: 15px; overflow-x: auto; padding-bottom: var(--space-1); }
-.contrib-months, .contrib-grid { display: grid; gap: 4px; width: max-content; }
-.contrib-months { margin-bottom: var(--space-1); }
-.contrib-month { font-size: var(--font-size-micro); color: var(--text-faint); white-space: nowrap; overflow: hidden; }
-.contrib-grid { align-items: center; }
-.contrib-wday { font-size: var(--font-size-micro); color: var(--text-faint); white-space: nowrap; }
+/* ContributionGrid.tsx: the activity grids as calendar-style squares. One row per week, Monday
+   to Sunday left to right: days run horizontally so a week or a month of squares occupies the
+   card rather than huddling in its corner. The 1fr tracks fill the card up to --contrib-max, so
+   squares stay comparable across ranges instead of gigantic on a week or tiny in a phone card;
+   aspect-ratio (not a fixed height) is what keeps every cell a square while the track widths stay
+   fractional. The weekday header and the grid read the same gutter and the same columns, so the
+   day names above always sit over the column they name. */
+.contrib { --contrib-gutter: 34px; overflow-x: auto; padding-bottom: var(--space-1); }
+.contrib-wdays, .contrib-grid { display: grid; gap: 6px; width: 100%; max-width: 560px; }
+.contrib-wdays { margin-bottom: var(--space-1); }
+.contrib-month { font-size: var(--font-size-micro); color: var(--text-faint); white-space: nowrap; align-self: center; }
+.contrib-wday { font-size: var(--font-size-micro); color: var(--text-faint); white-space: nowrap; overflow: hidden; }
 /* appearance/font reset: most squares are buttons (the annotate tap target), and a button without
    it wears the browser's own chrome. aspect-ratio, not a fixed height, is what keeps every cell a
    square while the track widths stay fractional. */
 .contrib-day {
-  appearance: none; font: inherit; margin: 0; padding: 0; border: 0; border-radius: 4px;
-  width: var(--contrib-cell); aspect-ratio: 1; box-sizing: border-box;
+  appearance: none; font: inherit; margin: 0; padding: 0; border: 0; border-radius: 6px;
+  width: 100%; aspect-ratio: 1; box-sizing: border-box;
   background: var(--chart-grid); color: inherit;
 }
 button.contrib-day { cursor: pointer; }

@@ -384,30 +384,35 @@ export function Activity() {
       <h1 style={{ fontSize: 'var(--font-size-lg)', margin: '0 0 var(--space-3)' }}>{t('activity.title')}</h1>
       <ControlRow controls={resolved} sources={sources} exportPath={exportPath} trendNote yearCompare />
       <CardGrid>
-        {/* First row, two halves: steps on the left, workouts on the right. GitHub-style square
+        {/* First row, two halves: steps on the left, workouts on the right. Calendar-style square
             grids (ContributionGrid) in both, the workouts card reading workout_count through
             metric="workout_count" with the same max-based colour domain as steps. Each card's
-            headline is the period's own total over the filtered range, so the grid answers "on
-            which days" under a figure that answers "how much". */}
-        <Card span={6} label={t('activity.dailySteps.label')} basis={stepsBasis()}>
+            headline is the period's own total over the filtered range, rendered inside the grid
+            under the title in StatTile's own order (Card would print its basis first); nothing is
+            headlined for an empty period, where a "0" would state a reading that never happened. */}
+        <Card span={6} label={t('activity.dailySteps.label')}>
           {stepsQuery.isError ? <ErrorState onRetry={() => void stepsQuery.refetch()} error={stepsQuery.error} />
             : stepsQuery.isPending ? <Loading /> : (
             <ContributionGrid days={heatmapDays} max={maxSteps}
               label={t('activity.dailySteps.chartLabel', { period })}
-              totalValue={formatMetricValue(sum(values(stepsPoints)), 'steps', i18n.language, '')}
+              totalValue={stepsPoints.length === 0 ? undefined
+                : formatMetricValue(sum(values(stepsPoints)), 'steps', i18n.language, '')}
               totalUnit={t('activity.units.stepsShort')}
+              basis={stepsBasis()}
               annotations={stepsAnnotations} excluded={stepsOverrides.excluded}
               onPointClick={(localDate) => setAnnotateTarget({ scope: 'day_metric', localDate, metric: 'steps' })} />
           )}
         </Card>
 
-        <Card span={6} label={t('activity.dailyWorkouts.label')} basis={workoutsBasis()}>
+        <Card span={6} label={t('activity.dailyWorkouts.label')}>
           {workoutsQuery.isError ? <ErrorState onRetry={() => void workoutsQuery.refetch()} error={workoutsQuery.error} />
             : workoutsQuery.isPending ? <Loading /> : (
             <ContributionGrid days={workoutHeatmapDays} max={maxWorkouts} metric="workout_count"
               label={t('activity.dailyWorkouts.chartLabel', { period })}
-              totalValue={formatMetricValue(sum(values(workoutPoints)), 'workout_count', i18n.language, '')}
+              totalValue={workoutPoints.length === 0 ? undefined
+                : formatMetricValue(sum(values(workoutPoints)), 'workout_count', i18n.language, '')}
               totalUnit={t('activity.units.workoutsShort')}
+              basis={workoutsBasis()}
               annotations={workoutsAnnotations} excluded={workoutsOverrides.excluded}
               onPointClick={(localDate) => setAnnotateTarget({ scope: 'day_metric', localDate, metric: 'workout_count' })} />
           )}

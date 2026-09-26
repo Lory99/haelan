@@ -46,6 +46,13 @@ function squares(): HTMLElement[] {
   ) as HTMLElement[]
 }
 
+function square(date: string): HTMLElement {
+  const found = squares().find((s) =>
+    s.getAttribute('aria-label')?.startsWith(date) ?? s.getAttribute('title')?.startsWith(date))
+  if (!found) throw new Error(`no square for ${date}`)
+  return found
+}
+
 describe('gridLevel', () => {
   // The darkest square is always the period's best day, whatever the metric's own units are:
   // 100 of max 100 and 3 of max 3 both read level 5, which is what "same as steps" means for a
@@ -68,17 +75,30 @@ describe('gridLevel', () => {
 })
 
 describe('ContributionGrid', () => {
-  // Shape, not paint: seven days in one week column, each a square carrying its level, with the
-  // month named once above the column it opens.
-  it('draws one square per day with the month over its week', () => {
+  // Shape, not paint: a single week is one row of seven squares, Monday to Sunday left to right
+  // under a full weekday header, with the month named once in the row's own gutter.
+  it('lays days out horizontally, one row per week', () => {
     mountGrid(<ContributionGrid days={WEEK} max={12000} label="Steps per day"
       totalValue="48,000" totalUnit="steps" onPointClick={() => {}} />)
     expect(squares()).toHaveLength(7)
     expect(squares().every((s) => s.tagName === 'BUTTON')).toBe(true)
+    expect([...container!.querySelectorAll('.contrib-wday')].map((el) => el.textContent))
+      .toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
     expect(container!.querySelector('.contrib-month')?.textContent).toBe('Aug')
-    // A real gap grid, not stretched bands: fixed cells share one gutter and one column template.
-    expect(container!.querySelector('.contrib-grid')).not.toBeNull()
-    expect(container!.querySelector('.contrib-wday')?.textContent).toBe('Mon')
+    // Row-major placement: Monday opens the row, Sunday closes it, everything on week one's row.
+    expect(square('2026-08-10').getAttribute('style')).toContain('grid-column: 2')
+    expect(square('2026-08-16').getAttribute('style')).toContain('grid-column: 8')
+    for (const s of squares()) expect(s.getAttribute('style')).toContain('grid-row: 1')
+  })
+
+  // A second week is a second row: the next Monday sits under the first, not beside it.
+  it('starts a new row for each week', () => {
+    const days: HeatmapDay[] = [...WEEK, day('2026-08-17', 9000)]
+    mountGrid(<ContributionGrid days={days} max={12000} label="Steps per day"
+      totalValue="57,000" totalUnit="steps" onPointClick={() => {}} />)
+    expect(squares()).toHaveLength(8)
+    expect(square('2026-08-17').getAttribute('style')).toContain('grid-column: 2')
+    expect(square('2026-08-17').getAttribute('style')).toContain('grid-row: 2')
   })
 
   // Paint: the level rides the value against this period's max, through the data attribute the
@@ -86,8 +106,7 @@ describe('ContributionGrid', () => {
   it('buckets each square against the period max', () => {
     mountGrid(<ContributionGrid days={WEEK} max={12000} label="Steps per day"
       totalValue="48,000" totalUnit="steps" onPointClick={() => {}} />)
-    const level = (date: string): string | null =>
-      squares().find((s) => s.getAttribute('aria-label')?.startsWith(date))?.getAttribute('data-level') ?? null
+    const level = (date: string): string | null => square(date).getAttribute('data-level')
     expect(level('2026-08-13')).toBe('5')
     expect(level('2026-08-10')).toBe('4')
     expect(level('2026-08-11')).toBe('2')
@@ -101,8 +120,7 @@ describe('ContributionGrid', () => {
     const days: HeatmapDay[] = [day('2026-08-10', null, 2), day('2026-08-11', null, 0), day('2026-08-12', null, null)]
     mountGrid(<ContributionGrid days={days} max={2} metric="workout_count" label="Workouts per day"
       totalValue="2" totalUnit="workouts" onPointClick={() => {}} />)
-    const level = (date: string): string | null =>
-      squares().find((s) => s.getAttribute('aria-label')?.startsWith(date))?.getAttribute('data-level') ?? null
+    const level = (date: string): string | null => square(date).getAttribute('data-level')
     expect(level('2026-08-10')).toBe('5')
     expect(level('2026-08-11')).toBe('0')
     expect(level('2026-08-12')).toBe('0')
@@ -116,10 +134,10 @@ describe('ContributionGrid', () => {
     mountGrid(<ContributionGrid days={WEEK} max={12000} label="Steps per day"
       totalValue="48,000" totalUnit="steps" excluded={['2026-08-10']}
       annotations={[{ date: '2026-08-11', text: 'hotel gym' }]} onPointClick={onPointClick} />)
-    const monday = squares().find((s) => s.getAttribute('aria-label')?.startsWith('2026-08-10'))!
+    const monday = square('2026-08-10')
     expect(monday.hasAttribute('data-excluded')).toBe(true)
     expect(monday.getAttribute('aria-label')).toContain('excluded')
-    const tuesday = squares().find((s) => s.getAttribute('aria-label')?.startsWith('2026-08-11'))!
+    const tuesday = square('2026-08-11')
     expect(tuesday.hasAttribute('data-annotated')).toBe(true)
     expect(tuesday.getAttribute('aria-label')).toContain('hotel gym')
     act(() => { monday.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
@@ -141,8 +159,27 @@ describe('ContributionGrid', () => {
   // headline style, above the "on which days" grid.
   it('headlines the period total above the grid', () => {
     mountGrid(<ContributionGrid days={WEEK} max={12000} label="Steps per day"
-      totalValue="48,000" totalUnit="steps" onPointClick={() => {}} />)
+      totalValue="48,000" totalUnit="steps" basis="calendar heatmap, 6 of 7 days"
+      onPointClick={() => {}} />)
+    const figure = container!.querySelector('figure')!
+    // StatTile's own order (value, then basis), which Card's basis prop would invert: the total
+    // sits under the card's title and the basis under the total. Only the first three children
+    // are ordered here; the toggle and the table follow.
+    const order = [...figure.children].map((el) => el.className).slice(0, 3)
+    expect(order).toEqual(['value', 'basis', 'contrib'])
     expect(container!.querySelector('.value')?.textContent).toBe('48,000 steps')
+    expect(container!.querySelector('.basis')?.textContent).toContain('6 of 7 days')
+  })
+
+  // An empty period headlines nothing: a bare "0" would state a reading that never happened, the
+  // exact claim pages.test.tsx's own zero rule holds the whole app to. The basis line below still
+  // says there were no readings.
+  it('headlines no total when no day reported', () => {
+    const empty: HeatmapDay[] = [day('2026-08-10', null), day('2026-08-11', null)]
+    mountGrid(<ContributionGrid days={empty} max={0} label="Steps per day"
+      basis="calendar heatmap, no readings in these 2 days" onPointClick={() => {}} />)
+    expect(container!.querySelector('.value')).toBeNull()
+    expect(container!.querySelector('.basis')?.textContent).toContain('no readings')
   })
 
   // The same show-numbers contract as every echarts chart: hidden-but-present table until the
