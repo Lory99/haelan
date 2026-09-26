@@ -570,15 +570,17 @@ describe('the Activity page', () => {
   // group's own response.
   // Finding 2 of the second pass review: session-list-excluded.test.tsx mounts SessionList alone,
   // so nothing rendered the whole Activity page with an excluded session and read the workout
-  // count tile beside it. The disagreement is the feature, not a bug the two queries happen to
+  // count beside it. The disagreement is the feature, not a bug the two queries happen to
   // share: this is the one test where they sit on the page together and are asserted together.
+  // The count moved off its old tile into the Daily workouts heatmap's own headline; the tile is
+  // gone, the assertion moved with the number.
   it('shows the excluded session struck through in the list, beside a count that already excludes it', async () => {
     const restore = stubActivityExcludedWorkout()
     const { client, tree } = withQuery(<Activity />)
     mount(<I18nProvider lng="en">{tree}</I18nProvider>)
     await flush(client, () => container!.innerHTML)
     const card = [...container!.querySelectorAll('.card')]
-      .find((c) => c.querySelector('.label')?.textContent === 'Workouts')
+      .find((c) => c.querySelector('.label')?.textContent === 'Daily workouts')
     expect(card?.querySelector('.value')?.textContent).toBe('2 workouts')
     // Newest first (SessionList's own order): s3 (Aug 7), s2 (Aug 5, excluded), s1 (Aug 3).
     const rows = [...container!.querySelectorAll('.session-row')].map((r) => r.className)
@@ -609,14 +611,15 @@ describe('the Activity page', () => {
   })
 
   // The whole-branch review's own finding: the test above checks the CONTENTS of an exported
-  // constant, not that Activity.tsx:276's ternary actually reads it to choose what to draw.
-  // Deleting that ternary (or reverting both cards' span back to 4) left the rest of this suite
-  // green. This test mounts the real page and reads something only DailyBars produces, so it
-  // cannot pass the same way: `useChart`'s own inline host height (130 for DailyBars, 34 for
-  // Sparkline -- useChart.ts's returned `style`) and the `span 6` on the two promoted cards'
-  // `.card` element (Card.tsx), against a card that stayed a Sparkline at span 4.
+  // constant, not that the card ternary actually reads it to choose what to draw. Deleting that
+  // ternary (or reverting both cards' span back to 4) left the rest of this suite green. This test
+  // mounts the real page and reads something only DailyBars produces, so it cannot pass the same
+  // way: `useChart`'s own inline host height (130 for DailyBars, 34 for Sparkline --
+  // useChart.ts's returned `style`) and each promoted card's own span on its `.card` element
+  // (Card.tsx) -- distance a third of the third row, floors still half a row -- against a card
+  // that stayed a Sparkline at span 4.
   //
-  // Confirmed by removing the ternary at Activity.tsx:276 (`BAR_METRICS.has(metric) ? <DailyBars
+  // Confirmed by removing the ternary (`BAR_METRICS.has(metric) ? <DailyBars
   // .../> : <Sparkline .../>` collapsed to always `<Sparkline .../>`) and watching this test fail:
   // "expected '34px' to be '130px'" on the Distance assertion, restored afterwards.
   it('draws a DailyBars host, not a Sparkline one, on the promoted distance and floors cards', async () => {
@@ -643,7 +646,7 @@ describe('the Activity page', () => {
     // has, so this test would fail the same way if DailyBars' host were simply always 130px tall.
     expect(hostHeightOf(activeEnergyCard)).toBe('34px')
 
-    expect(distanceCard.style.gridColumn).toBe('span 6')
+    expect(distanceCard.style.gridColumn).toBe('span 4')
     expect(floorsCard.style.gridColumn).toBe('span 6')
     expect(activeEnergyCard.style.gridColumn).toBe('span 4')
     restore()

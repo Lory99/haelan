@@ -322,7 +322,6 @@
       "min": "min",
       "activeZoneMinutesShort": "AZM",
       "stepsShort": "steps",
-      "workouts": "Workouts",
       "workoutsShort": "workouts",
       "bpm": "bpm",
       "paceSuffix": "/km",
@@ -406,11 +405,6 @@
       "fatBurn": "Fat burn",
       "cardio": "Cardio",
       "peak": "Peak"
-    },
-    "workoutCount": {
-      "label": "Workouts",
-      "basis": "count, one per workout however many devices recorded it, {{reported}} of {{total}} days",
-      "chartLabel": "Daily workout count through {{period}}"
     },
     "workoutMinutes": {
       "label": "Workout minutes",

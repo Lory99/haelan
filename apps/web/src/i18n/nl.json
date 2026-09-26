@@ -322,7 +322,6 @@
       "min": "min",
       "activeZoneMinutesShort": "AZM",
       "stepsShort": "stappen",
-      "workouts": "Work-outs",
       "workoutsShort": "work-outs",
       "bpm": "bpm",
       "paceSuffix": "/km",
@@ -406,11 +405,6 @@
       "fatBurn": "Vetverbranding",
       "cardio": "Cardio",
       "peak": "Piek"
-    },
-    "workoutCount": {
-      "label": "Work-outs",
-      "basis": "aantal, één per work-out ongeacht hoeveel apparaten die registreerden, {{reported}} van {{total}} dagen",
-      "chartLabel": "Dagelijks aantal work-outs in {{period}}"
     },
     "workoutMinutes": {
       "label": "Work-outminuten",

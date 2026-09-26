@@ -440,73 +440,18 @@ export function Activity() {
           )}
         </Card>
 
-        <Card span={12} label={t('activity.activityBands.label')} basis={bandsBasis}>
+        {/* Row 2: the intensity bands take most of the row, the zone minutes card the rest.
+            Both count active minutes, split two ways (intensity against zone score), so they read
+            as one row rather than two full-width sections. */}
+        <Card span={8} label={t('activity.activityBands.label')} basis={bandsBasis}>
           <StackedDailyBars series={bands} labels={rangeDates} metric="active_minutes_light"
             label={t('activity.activityBands.chartLabel', { period })}
             unit={t('activity.units.minutes')} axisUnit={t('activity.units.min')} />
         </Card>
 
-        {/* The two charts above, then the sessions, then the tiles. Reusing this same ControlRow
-            rather than a rail item of its own (nine unlabelled icons already proved to be too many
-            three days before this task started): the range and the source picker both apply to
-            this section without being rebuilt, since SessionList queries from the same `resolved`
-            the cards do. The export does not: exportPathFor builds a daily rollup download over
-            SUM_METRICS and knows nothing about sessions, so the link beside these controls will
-            not carry the rows below them.
-
-            It sat at the foot of the page until this change, behind fourteen aggregate tiles. The
-            workouts are what a reader came for, and three screens of active-zone-minute averages
-            in front of them is the wrong order to read this page in. */}
-        <Card span={12} label={t('activity.sessions.label')}>
-          <SessionList controls={resolved} />
-        </Card>
-
-        {card('distance', 6, 'activity.distance.label', 'activity.distance.basis', 'activity.distance.basisWorn',
-          'activity.distance.chartLabel', 'activity.units.distance', 'activity.units.km', 'higher-is-better',
-          // distance is stored in millimeters (METRICS.distance, precision 0); this card displays
-          // the period's total as kilometers with one decimal, a precision the catalogue's own
-          // field describes a different unit than, so it cannot answer this card's question (the
-          // audit's own finding #9). Converted here and handed to formatNumber directly with its
-          // own precision, never to formatMetricValue, which would apply millimeters' precision 0
-          // to a kilometers value and print "5" instead of "5.2" (see formatNumber's own comment
-          // in format.ts for why formatMetricValue has no parameter that could do this by accident).
-          (total) => formatNumber(total / 1_000_000, 1, i18n.language, ''),
-          // The Sparkline's own accessible table cell, same conversion applied per day rather than
-          // to the period total: without this, the table sat behind formatMetricValue's default
-          // (metric 'distance', catalogue precision 0, millimeters) and printed the raw per-day
-          // millimeter reading ("5,234,567") under a column header reading "Distance in
-          // kilometers" -- correct for precision, wrong for unit, and exactly what an M3e review
-          // caught. `v === null` first: a day with no reading stays a day with no reading, not
-          // `null / 1_000_000` becoming 0 and reading as a real zero-kilometer day.
-          (v, absent) => formatNumber(v === null ? null : v / 1_000_000, 1, i18n.language, absent))}
-        {card('floors', 6, 'activity.floors.label', 'activity.floors.basis', 'activity.floors.basis',
-          'activity.floors.chartLabel', 'activity.units.floors', 'activity.units.floorsShort', 'higher-is-better')}
-        {card('total_calories', 4, 'activity.totalCalories.label', 'activity.totalCalories.basis', 'activity.totalCalories.basis',
-          'activity.totalCalories.chartLabel', 'activity.units.kcal', 'activity.units.kcalShort', 'higher-is-better')}
-        {card('active_energy', 4, 'activity.activeEnergy.label', 'activity.activeEnergy.basis', 'activity.activeEnergy.basisWorn',
-          'activity.activeEnergy.chartLabel', 'activity.units.kcal', 'activity.units.kcalShort', 'higher-is-better')}
-
-        {/* Third in the row with total calories and active energy, which is where it belongs on
-            both counts. All three are what the effort cost, where the four tiles under them count
-            how the time was spent - and it closes that row exactly, leaving the three activity
-            levels a row of their own and the zone minutes card a row of its own. It sat last on
-            the page until this change, alone in a row at a third of the width.
-
-            `controls.to` rather than the whole range: this card is 7 days against 28 by the
-            metric's own definition, so the range picker moves only which day it is asked about,
-            never the width of either window. See useTrainingLoad for why that has to stay true. */}
-        <TrainingLoadCard on={controls.to} source={source} span={4} />
-
-        {card('active_minutes_light', 4, 'activity.activeMinutesLight.label', 'activity.activeMinutesLight.basis', 'activity.activeMinutesLight.basis',
-          'activity.activeMinutesLight.chartLabel', 'activity.units.minutes', 'activity.units.min', 'higher-is-better')}
-        {card('active_minutes_moderate', 4, 'activity.activeMinutesModerate.label', 'activity.activeMinutesModerate.basis', 'activity.activeMinutesModerate.basis',
-          'activity.activeMinutesModerate.chartLabel', 'activity.units.minutes', 'activity.units.min', 'higher-is-better')}
-        {card('active_minutes_vigorous', 4, 'activity.activeMinutesVigorous.label', 'activity.activeMinutesVigorous.basis', 'activity.activeMinutesVigorous.basis',
-          'activity.activeMinutesVigorous.chartLabel', 'activity.units.minutes', 'activity.units.min', 'higher-is-better')}
-
-        {/* One card for the three, where there used to be three cards.
-            They are labelled AZM rather than minutes, unlike the activity levels above, because
-            the number is a score: a cardio or peak minute is worth two. Measured in
+        {/* One card for the three zones, where there used to be three cards.
+            They are labelled AZM rather than minutes, unlike the activity levels beside them,
+            because the number is a score: a cardio or peak minute is worth two. Measured in
             probe/findings/activity-minute-overlap.md; see the note in metrics.ts.
 
             The three are sub-dimensions of one quantity, and three separate cards said so nowhere
@@ -520,7 +465,7 @@ export function Activity() {
             three. That is the trade for the density, and it is reversible - the metrics, their
             series and their chart labels all still exist.
 
-            Gated by hand rather than through MetricCard, the same as the two chart cards above and
+            Gated by hand rather than through MetricCard, the same as the chart cards above and
             for the same reason: MetricCard gates one metric and its points, and this card holds
             three. All three ride the one `sum` request, so one query answers for the card. */}
         {(() => {
@@ -541,7 +486,7 @@ export function Activity() {
           const azmBasis = t('activity.activeZoneMinutes.basis', { total: rangeDates.length })
 
           return (
-            <Card span={12} label={t('activity.activeZoneMinutes.label')} basis={azmBasis}>
+            <Card span={4} label={t('activity.activeZoneMinutes.label')} basis={azmBasis}>
               {azmQuery.isError ? <ErrorState onRetry={() => void azmQuery.refetch()} error={azmQuery.error} />
                 : azmQuery.isPending ? <Loading /> : (
                 <div className="zone-tiles">
@@ -565,10 +510,49 @@ export function Activity() {
           )
         })()}
 
-        {card('workout_count', 4, 'activity.workoutCount.label', 'activity.workoutCount.basis', 'activity.workoutCount.basis',
-          'activity.workoutCount.chartLabel', 'activity.units.workouts', 'activity.units.workoutsShort', 'neutral')}
+        {card('distance', 4, 'activity.distance.label', 'activity.distance.basis', 'activity.distance.basisWorn',
+          'activity.distance.chartLabel', 'activity.units.distance', 'activity.units.km', 'higher-is-better',
+          // distance is stored in millimeters (METRICS.distance, precision 0); this card displays
+          // the period's total as kilometers with one decimal, a precision the catalogue's own
+          // field describes a different unit than, so it cannot answer this card's question (the
+          // audit's own finding #9). Converted here and handed to formatNumber directly with its
+          // own precision, never to formatMetricValue, which would apply millimeters' precision 0
+          // to a kilometers value and print "5" instead of "5.2" (see formatNumber's own comment
+          // in format.ts for why formatMetricValue has no parameter that could do this by accident).
+          (total) => formatNumber(total / 1_000_000, 1, i18n.language, ''),
+          // The Sparkline's own accessible table cell, same conversion applied per day rather than
+          // to the period total: without this, the table sat behind formatMetricValue's default
+          // (metric 'distance', catalogue precision 0, millimeters) and printed the raw per-day
+          // millimeter reading ("5,234,567") under a column header reading "Distance in
+          // kilometers" -- correct for precision, wrong for unit, and exactly what an M3e review
+          // caught. `v === null` first: a day with no reading stays a day with no reading, not
+          // `null / 1_000_000` becoming 0 and reading as a real zero-kilometer day.
+          (v, absent) => formatNumber(v === null ? null : v / 1_000_000, 1, i18n.language, absent))}
+
         {card('workout_minutes', 4, 'activity.workoutMinutes.label', 'activity.workoutMinutes.basis', 'activity.workoutMinutes.basis',
           'activity.workoutMinutes.chartLabel', 'activity.units.minutes', 'activity.units.min', 'neutral')}
+
+        {/* Closes the third row with distance and workout minutes: the training load beside the
+            work that produced it, each a third of the row.
+
+            `controls.to` rather than the whole range: this card is 7 days against 28 by the
+            metric's own definition, so the range picker moves only which day it is asked about,
+            never the width of either window. See useTrainingLoad for why that has to stay true. */}
+        <TrainingLoadCard on={controls.to} source={source} span={4} />
+
+        {card('floors', 6, 'activity.floors.label', 'activity.floors.basis', 'activity.floors.basis',
+          'activity.floors.chartLabel', 'activity.units.floors', 'activity.units.floorsShort', 'higher-is-better')}
+        {card('total_calories', 4, 'activity.totalCalories.label', 'activity.totalCalories.basis', 'activity.totalCalories.basis',
+          'activity.totalCalories.chartLabel', 'activity.units.kcal', 'activity.units.kcalShort', 'higher-is-better')}
+        {card('active_energy', 4, 'activity.activeEnergy.label', 'activity.activeEnergy.basis', 'activity.activeEnergy.basisWorn',
+          'activity.activeEnergy.chartLabel', 'activity.units.kcal', 'activity.units.kcalShort', 'higher-is-better')}
+
+        {card('active_minutes_light', 4, 'activity.activeMinutesLight.label', 'activity.activeMinutesLight.basis', 'activity.activeMinutesLight.basis',
+          'activity.activeMinutesLight.chartLabel', 'activity.units.minutes', 'activity.units.min', 'higher-is-better')}
+        {card('active_minutes_moderate', 4, 'activity.activeMinutesModerate.label', 'activity.activeMinutesModerate.basis', 'activity.activeMinutesModerate.basis',
+          'activity.activeMinutesModerate.chartLabel', 'activity.units.minutes', 'activity.units.min', 'higher-is-better')}
+        {card('active_minutes_vigorous', 4, 'activity.activeMinutesVigorous.label', 'activity.activeMinutesVigorous.basis', 'activity.activeMinutesVigorous.basis',
+          'activity.activeMinutesVigorous.chartLabel', 'activity.units.minutes', 'activity.units.min', 'higher-is-better')}
 
         {/* label is its own catalogue string, not activity.dailySteps.label reused: a second card
             sharing "Daily steps" would make a label lookup by exact text ambiguous, the same
@@ -582,6 +566,17 @@ export function Activity() {
             exact call InsightCard's own default makes without a formatValue override. */}
         <InsightCard insight={stepsInsight.data} query={stepsInsight} metric="steps" span={4}
           label={t('activity.insights.steps')} polarity="higher-is-better" />
+
+        {/* Last on the page: the sessions close the activity story after the aggregates. Reusing
+            this same ControlRow rather than a rail item of its own (nine unlabelled icons already
+            proved to be too many three days before this task started): the range and the source
+            picker both apply to this section without being rebuilt, since SessionList queries from
+            the same `resolved` the cards do. The export does not: exportPathFor builds a daily
+            rollup download over SUM_METRICS and knows nothing about sessions, so the link beside
+            these controls will not carry the rows below them. */}
+        <Card span={12} label={t('activity.sessions.label')}>
+          <SessionList controls={resolved} />
+        </Card>
 
       </CardGrid>
       {annotateTarget && <AnnotatePanel target={annotateTarget} onClose={() => setAnnotateTarget(null)} />}
